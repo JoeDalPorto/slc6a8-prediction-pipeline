@@ -30,18 +30,18 @@ HYDROPATHY = {
 CHARGE = {"R": 1.0, "K": 1.0, "H": 0.1, "D": -1.0, "E": -1.0}
 
 KNOWN_CLINVAR = {
-    "G42R":  ("Pathogenic (Criteria provided, multiple submitters)", "11695"),
-    "G87R":  ("Pathogenic (Criteria provided, multiple submitters)", "11696"),
-    "C144W": ("Pathogenic (Criteria provided, single submitter)", "11698"),
-    "G253R": ("Pathogenic (Criteria provided, single submitter)", "213898"),
-    "P382L": ("Pathogenic (Criteria provided, multiple submitters)", "11700"),
-    "P390L": ("Pathogenic (Criteria provided, multiple submitters)", "11701"),
-    "G421R": ("Pathogenic (Criteria provided, multiple submitters)", "11702"),
-    "C491W": ("Pathogenic (Criteria provided, multiple submitters)", "11703"),
-    "P544L": ("Pathogenic (Criteria provided, multiple submitters)", "11704"),
-    "P554L": ("Pathogenic (Criteria provided, multiple submitters)", "11705"),
-    "A54V":  ("Benign (Criteria provided, multiple submitters)", "93192"),
-    "V114I": ("Benign (Criteria provided, multiple submitters)", "134812"),
+    "G42R":  ("Pathogenic (Multiple submitters)", "11695"),
+    "G87R":  ("Pathogenic (Multiple submitters)", "11696"),
+    "C144W": ("Pathogenic (Single submitter)", "11698"),
+    "G253R": ("Pathogenic (Single submitter)", "213898"),
+    "P382L": ("Pathogenic (Multiple submitters)", "11700"),
+    "P390L": ("Pathogenic (Multiple submitters)", "11701"),
+    "G421R": ("Pathogenic (Multiple submitters)", "11702"),
+    "C491W": ("Pathogenic (Multiple submitters)", "11703"),
+    "P544L": ("Pathogenic (Multiple submitters)", "11704"),
+    "P554L": ("Pathogenic (Multiple submitters)", "11705"),
+    "A54V":  ("Benign (Multiple submitters)", "93192"),
+    "V114I": ("Benign (Multiple submitters)", "134812"),
 }
 
 def compute_biophysical_score(wt: str, alt: str, in_tm: bool):
@@ -70,30 +70,46 @@ def extract_first_float(val):
 
 @lru_cache(maxsize=2000)
 def fetch_dbnsfp_scores(wt: str, pos: int, alt: str):
-    """Fetches real AlphaMissense and REVEL scores from dbNSFP via MyVariant.info."""
+    """Queries dbNSFP directly via gene symbol and HGVSp suffix for AlphaMissense & REVEL."""
     wt_3 = AA_1_TO_3.get(wt, wt)
     alt_3 = AA_1_TO_3.get(alt, alt)
-    q = f"SLC6A8 AND (p.{wt_3}{pos}{alt_3} OR p.{wt}{pos}{alt})"
+    # Match exact dbNSFP protein notation (e.g., NP_005620.1:p.Gly87Arg)
+    q = f"dbnsfp.genename:SLC6A8 AND (dbnsfp.hgvsp:*p.{wt_3}{pos}{alt_3} OR dbnsfp.aa.pos:{pos})"
     try:
         res = requests.get(
             "https://myvariant.info",
-            params={"q": q, "fields": "dbnsfp.alphamissense,dbnsfp.revel", "size": 3},
-            timeout=4
+            params={
+                "q": q,
+                "fields": "dbnsfp.aa.alt,dbnsfp.alphamissense.score,dbnsfp.revel.score",
+                "size": 25
+            },
+            timeout=6
         ).json()
+
         am_score, revel_score = None, None
         for hit in res.get("hits", []):
             db = hit.get("dbnsfp", {})
+            aa_info = db.get("aa", {})
+            if isinstance(aa_info, list):
+                aa_info = next(iter(aa_info), {})
+            hit_alt = aa_info.get("alt")
+            # Ensure alternate amino acid matches requested mutation
+            if hit_alt and hit_alt != alt:
+                continue
+
             if am_score is None and "alphamissense" in db:
                 am_score = extract_first_float(db["alphamissense"].get("score"))
             if revel_score is None and "revel" in db:
                 revel_score = extract_first_float(db["revel"].get("score"))
+            if am_score is not None and revel_score is not None:
+                break
+
         return am_score, revel_score
     except Exception:
         return None, None
 
 @lru_cache(maxsize=2000)
 def query_ncbi_clinvar(wt: str, pos: int, alt: str):
-    """Queries official NCBI ClinVar E-utilities directly and extracts a clean string ID."""
     var_short = f"{wt}{pos}{alt}"
     wt_3 = AA_1_TO_3.get(wt, wt)
     alt_3 = AA_1_TO_3.get(alt, alt)
@@ -123,19 +139,12 @@ def query_ncbi_clinvar(wt: str, pos: int, alt: str):
             rec = sum_res.get("result", {}).get(vid_str, {})
             germline = rec.get("germline_classification", {})
             desc = germline.get("description") or rec.get("clinical_significance", {}).get("description")
-            rev = germline.get("review_status") or "NCBI ClinVar Record"
-
             if desc:
-                return (
-                    f"{desc} ({rev})",
-                    f"https://nih.gov{vid_str}/",
-                    f"VCV{vid_str.zfill(9)}"
-                )
-
+                return desc, f"https://nih.gov{vid_str}/", f"VCV{vid_str.zfill(9)}"
     except Exception:
         return "Click to Search NCBI ClinVar", fallback_url, f"Search {hgvs_p}"
 
-    return "Not Documented in ClinVar (Novel / VUS)", fallback_url, f"Search {hgvs_p}"
+    return "Not Documented (Novel / VUS)", fallback_url, f"Search {hgvs_p}"
 
 @app.get("/sequence")
 def get_sequence_metadata():
@@ -165,19 +174,19 @@ def predict_variant(pos: int, wt: str, alt: str):
 
     if "Pathogenic" in clinvar_text and "Benign" not in clinvar_text:
         prob_pct = 96
-        verdict = "Pathogenic (ClinVar Verified)"
+        verdict = "Pathogenic"
     elif "Benign" in clinvar_text and "Pathogenic" not in clinvar_text:
         prob_pct = 6
-        verdict = "Benign (ClinVar Verified)"
+        verdict = "Benign"
     elif am_score is not None and revel_score is not None:
         prob_pct = int(round(((am_score * 0.6) + (revel_score * 0.4)) * 100))
-        verdict = "Likely Deleterious" if prob_pct >= 70 else ("Likely Tolerated" if prob_pct <= 35 else "Uncertain / VUS")
+        verdict = "Likely Pathogenic" if prob_pct >= 70 else ("Likely Benign" if prob_pct <= 35 else "Uncertain / VUS")
     elif am_score is not None:
         prob_pct = int(round(am_score * 100))
-        verdict = "Likely Deleterious" if prob_pct >= 70 else ("Likely Tolerated" if prob_pct <= 35 else "Uncertain / VUS")
+        verdict = "Likely Pathogenic" if prob_pct >= 70 else ("Likely Benign" if prob_pct <= 35 else "Uncertain / VUS")
     else:
         prob_pct = compute_biophysical_score(wt, alt, in_tm)
-        verdict = "Likely Deleterious (Model)" if prob_pct >= 70 else ("Likely Tolerated (Model)" if prob_pct <= 35 else "Uncertain / VUS (Model)")
+        verdict = "Likely Pathogenic (Est.)" if prob_pct >= 70 else ("Likely Benign (Est.)" if prob_pct <= 35 else "Uncertain / VUS")
 
     if prob_pct >= 70:
         pred_bg, pred_border, pred_text = "#2d111a", "#fb7185", "#ffe4e6"
