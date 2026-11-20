@@ -56,57 +56,36 @@ def compute_biophysical_score(wt: str, alt: str, in_tm: bool):
         score += 0.22
     return int(min(max(round(score * 100), 6), 95))
 
-def extract_first_float(val):
-    if isinstance(val, (int, float)):
-        return float(val)
-    if isinstance(val, list) and val:
-        return extract_first_float(next(iter(val)))
-    if isinstance(val, dict):
-        for v in val.values():
-            res = extract_first_float(v)
-            if res is not None:
-                return res
-    return None
-
 @lru_cache(maxsize=2000)
-def fetch_dbnsfp_scores(wt: str, pos: int, alt: str):
-    """Queries dbNSFP directly via gene symbol and HGVSp suffix for AlphaMissense & REVEL."""
+def fetch_ensembl_vep(wt: str, pos: int, alt: str):
+    """Fetches real AlphaMissense and REVEL scores from Ensembl REST VEP API."""
     wt_3 = AA_1_TO_3.get(wt, wt)
     alt_3 = AA_1_TO_3.get(alt, alt)
-    # Match exact dbNSFP protein notation (e.g., NP_005620.1:p.Gly87Arg)
-    q = f"dbnsfp.genename:SLC6A8 AND (dbnsfp.hgvsp:*p.{wt_3}{pos}{alt_3} OR dbnsfp.aa.pos:{pos})"
+    hgvs_notation = f"NP_005620.1:p.{wt_3}{pos}{alt_3}"
+    url = f"https://ensembl.org{hgvs_notation}"
+    params = {"AlphaMissense": "1", "REVEL": "1"}
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+
     try:
-        res = requests.get(
-            "https://myvariant.info",
-            params={
-                "q": q,
-                "fields": "dbnsfp.aa.alt,dbnsfp.alphamissense.score,dbnsfp.revel.score",
-                "size": 25
-            },
-            timeout=6
-        ).json()
-
-        am_score, revel_score = None, None
-        for hit in res.get("hits", []):
-            db = hit.get("dbnsfp", {})
-            aa_info = db.get("aa", {})
-            if isinstance(aa_info, list):
-                aa_info = next(iter(aa_info), {})
-            hit_alt = aa_info.get("alt")
-            # Ensure alternate amino acid matches requested mutation
-            if hit_alt and hit_alt != alt:
-                continue
-
-            if am_score is None and "alphamissense" in db:
-                am_score = extract_first_float(db["alphamissense"].get("score"))
-            if revel_score is None and "revel" in db:
-                revel_score = extract_first_float(db["revel"].get("score"))
-            if am_score is not None and revel_score is not None:
-                break
-
-        return am_score, revel_score
+        res = requests.get(url, params=params, headers=headers, timeout=8)
+        if res.status_code == 200:
+            payload = res.json()
+            first = next(iter(payload), {}) if isinstance(payload, list) else {}
+            am_score, revel_score = None, None
+            for tc in first.get("transcript_consequences", []):
+                if tc.get("gene_symbol") == "SLC6A8" or tc.get("canonical") == 1:
+                    if am_score is None and "alphamissense" in tc:
+                        am_data = tc["alphamissense"]
+                        am_score = am_data.get("am_pathogenicity") if isinstance(am_data, dict) else am_data
+                    if revel_score is None and "revel" in tc:
+                        revel_score = tc["revel"]
+            return (
+                float(am_score) if am_score is not None else None,
+                float(revel_score) if revel_score is not None else None
+            )
     except Exception:
-        return None, None
+        pass
+    return None, None
 
 @lru_cache(maxsize=2000)
 def query_ncbi_clinvar(wt: str, pos: int, alt: str):
@@ -114,11 +93,11 @@ def query_ncbi_clinvar(wt: str, pos: int, alt: str):
     wt_3 = AA_1_TO_3.get(wt, wt)
     alt_3 = AA_1_TO_3.get(alt, alt)
     hgvs_p = f"p.{wt_3}{pos}{alt_3}"
-    fallback_url = f"https://nih.gov+{hgvs_p}"
+    fallback_url = "https://nih.gov+" + hgvs_p
 
     if var_short in KNOWN_CLINVAR:
         sig, vid = KNOWN_CLINVAR[var_short]
-        return sig, f"https://nih.gov{vid}/", f"VCV{str(vid).zfill(9)}"
+        return sig, "https://nih.gov" + str(vid) + "/", "VCV" + str(vid).zfill(9)
 
     try:
         search_url = "https://nih.gov"
@@ -140,11 +119,11 @@ def query_ncbi_clinvar(wt: str, pos: int, alt: str):
             germline = rec.get("germline_classification", {})
             desc = germline.get("description") or rec.get("clinical_significance", {}).get("description")
             if desc:
-                return desc, f"https://nih.gov{vid_str}/", f"VCV{vid_str.zfill(9)}"
+                return desc, "https://nih.gov" + vid_str + "/", "VCV" + vid_str.zfill(9)
     except Exception:
-        return "Click to Search NCBI ClinVar", fallback_url, f"Search {hgvs_p}"
+        return "Click to Search NCBI ClinVar", fallback_url, "Search " + hgvs_p
 
-    return "Not Documented (Novel / VUS)", fallback_url, f"Search {hgvs_p}"
+    return "Not Documented (Novel / VUS)", fallback_url, "Search " + hgvs_p
 
 @app.get("/sequence")
 def get_sequence_metadata():
@@ -170,7 +149,7 @@ def predict_variant(pos: int, wt: str, alt: str):
         domain_bg, domain_border, domain_text = "#1e293b", "#64748b", "#e2e8f0"
 
     clinvar_text, clinvar_url, accession_label = query_ncbi_clinvar(wt, pos, alt)
-    am_score, revel_score = fetch_dbnsfp_scores(wt, pos, alt)
+    am_score, revel_score = fetch_ensembl_vep(wt, pos, alt)
 
     if "Pathogenic" in clinvar_text and "Benign" not in clinvar_text:
         prob_pct = 96
