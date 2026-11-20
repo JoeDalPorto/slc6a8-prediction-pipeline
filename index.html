@@ -73,40 +73,46 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Structural Topology Domain</h3>
-                    <div id="domain-card" style="background-color:#0f233c; border-color:#38bdf8; color:#bae6fd;" class="p-4 rounded-lg flex flex-col justify-center min-h-[100px] border-l-4">
-                        <span id="domain-title" class="text-lg font-bold">N-Terminal Cytoplasmic Tail</span>
+                    <div id="domain-card" style="background-color:#0f233c; border-color:#38bdf8; color:#bae6fd;" class="p-5 rounded-lg flex flex-col justify-center min-h-[148px] border-l-4">
+                        <span id="domain-title" class="text-xl font-bold">N-Terminal Cytoplasmic Tail</span>
                     </div>
                 </div>
 
                 <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Pathogenicity Prediction</h3>
-                    <div id="prob-card" style="background-color:#0b2920; border-color:#10b981; color:#d1fae5;" class="p-4 rounded-lg flex flex-col justify-center min-h-[100px] border-l-4">
-                        <div class="flex items-baseline justify-between">
-                            <span id="prob-pct" class="text-3xl font-black font-mono">18%</span>
-                            <span id="prob-verdict" class="text-xs font-bold uppercase tracking-wider">Likely Tolerated</span>
+                    <div id="prob-card" style="background-color:#0b2920; border-color:#10b981; color:#d1fae5;" class="p-4 rounded-lg flex flex-col justify-between min-h-[148px] border-l-4">
+                        <div>
+                            <div class="flex items-baseline justify-between">
+                                <span id="prob-pct" class="text-3xl font-black font-mono">18%</span>
+                                <span id="prob-verdict" class="text-xs font-bold uppercase tracking-wider">Likely Tolerated</span>
+                            </div>
+                            <div class="w-full bg-black/40 h-2 rounded-full mt-2 overflow-hidden">
+                                <div id="prob-bar" style="width:18%; background-color:#10b981;" class="h-full transition-all duration-200"></div>
+                            </div>
                         </div>
-                        <div class="w-full bg-black/40 h-2 rounded-full mt-2 overflow-hidden">
-                            <div id="prob-bar" style="width:18%; background-color:#10b981;" class="h-full transition-all duration-200"></div>
-                        </div>
-                        <div class="flex items-center gap-2 mt-2.5">
-                            <span class="text-[11px] font-mono bg-black/35 px-2 py-0.5 rounded border border-white/10">AlphaMissense: <strong id="am-badge">N/A</strong></span>
-                            <span class="text-[11px] font-mono bg-black/35 px-2 py-0.5 rounded border border-white/10">REVEL: <strong id="revel-badge">N/A</strong></span>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Live NCBI ClinVar Status</h3>
-                    <div id="predict-card" style="background-color:#2c1e0b; border-color:#f59e0b; color:#fef3c7;" class="p-4 rounded-lg flex flex-col justify-center min-h-[100px] border-l-4">
-                        <span id="predict-title" class="text-sm font-bold leading-snug">Not Documented in ClinVar (Novel / VUS)</span>
-                        <div id="clinvar-link-container" class="mt-2 hidden">
-                            <a id="clinvar-link" href="#" target="_blank" rel="noopener noreferrer" 
-                               class="inline-flex items-center gap-1.5 text-xs font-bold bg-[#0b0f19] hover:bg-slate-800 text-sky-300 px-2.5 py-1 rounded border border-sky-500/40">
-                                🔗 <span id="clinvar-accession">VCV000000000</span> ↗
-                            </a>
+                        <div class="mt-3 pt-2.5 border-t border-white/10 space-y-1.5 text-xs font-mono">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-300 font-semibold">ClinVar:</span>
+                                <span id="predict-title" class="font-bold text-right truncate">Not Documented (Novel / VUS)</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-300 font-semibold">AlphaMissense:</span>
+                                <strong id="am-badge" class="font-bold">N/A</strong>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-300 font-semibold">REVEL:</span>
+                                <strong id="revel-badge" class="font-bold">N/A</strong>
+                            </div>
+                            <div id="clinvar-link-container" class="pt-1 hidden">
+                                <a id="clinvar-link" href="#" target="_blank" rel="noopener noreferrer" 
+                                   class="inline-flex items-center gap-1.5 text-[11px] font-bold bg-[#0b0f19] hover:bg-slate-800 text-sky-300 px-2.5 py-1 rounded border border-sky-500/40">
+                                    🔗 NCBI Record: <span id="clinvar-accession">VCV000000000</span> ↗
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -308,7 +314,6 @@
                 el('revel-badge').textContent = data.revel;
                 el('prob-bar').style.width = pct + "%";
                 el('prob-bar').style.backgroundColor = data.predict_style.border;
-                Object.assign(el('prob-card').style, { backgroundColor: data.predict_style.bg, borderColor: data.predict_style.border, color: data.predict_style.text });
 
                 el('predict-title').textContent = data.prediction;
                 Object.assign(el('predict-card').style, { backgroundColor: data.predict_style.bg, borderColor: data.predict_style.border, color: data.predict_style.text });
