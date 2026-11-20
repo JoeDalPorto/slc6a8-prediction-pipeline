@@ -333,14 +333,26 @@
         async function bootstrapApp() {
             buildStaticSvg();
             runPipeline();
-            try {
-                const res = await fetch(API_BASE + "/sequence");
-                const meta = await res.json();
-                if (meta.sequence && meta.sequence.length === 635) {
-                    REF_SEQ = meta.sequence;
-                    runPipeline();
-                }
-            } catch (e) {}
+
+            // Auto-retry loop to wake up Render's free server if it was sleeping
+            for (let attempt = 1; attempt <= 8; attempt++) {
+                try {
+                    el('predict-title').textContent = attempt === 1
+                        ? "Connecting to Cloud API..."
+                        : `Waking up cloud server (attempt ${attempt}/8)...`;
+                    const res = await fetch(API_BASE + "/sequence");
+                    if (res.ok) {
+                        const meta = await res.json();
+                        if (meta.sequence && meta.sequence.length === 635) {
+                            REF_SEQ = meta.sequence;
+                        }
+                        runPipeline(); // Re-run immediately once server is awake!
+                        return;
+                    }
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, 4000));
+            }
+            el('predict-title').textContent = "Cloud API Unreachable (Check Render URL)";
         }
 
         el('pos-slider').addEventListener('input', runPipeline);
