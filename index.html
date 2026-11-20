@@ -282,7 +282,7 @@
             el('pill-txt').textContent = labelText;
         }
 
-                async function runPipeline() {
+            async function runPipeline() {
             const pos = parseInt(el('pos-slider').value, 10);
             el('pos-badge').textContent = pos;
             const wt = REF_SEQ.charAt(pos - 1);
@@ -304,8 +304,9 @@
             }
 
             // Valid NCBI ClinVar search link (never loops back to dashboard)
-            const ncbiSearchUrl = "https://nih.gov+" + variantLabel;
-            el('clinvar-link').href = ncbiSearchUrl;
+             const ncbiUrl = new URL("https://nih.gov");
+            ncbiUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
+            el('clinvar-link').href = ncbiUrl.toString();
             el('clinvar-accession').textContent = "Search " + variantLabel;
             el('clinvar-link-container').classList.remove('hidden');
 
