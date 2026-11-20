@@ -29,7 +29,6 @@ HYDROPATHY = {
 
 CHARGE = {"R": 1.0, "K": 1.0, "H": 0.1, "D": -1.0, "E": -1.0}
 
-# Verified canonical ClinVar SLC6A8 assertions for instant 0ms lookup
 KNOWN_CLINVAR = {
     "G42R":  ("Pathogenic (Criteria provided, multiple submitters)", "11695"),
     "G87R":  ("Pathogenic (Criteria provided, multiple submitters)", "11696"),
@@ -57,23 +56,54 @@ def compute_biophysical_score(wt: str, alt: str, in_tm: bool):
         score += 0.22
     return int(min(max(round(score * 100), 6), 95))
 
+def extract_first_float(val):
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, list) and val:
+        return extract_first_float(next(iter(val)))
+    if isinstance(val, dict):
+        for v in val.values():
+            res = extract_first_float(v)
+            if res is not None:
+                return res
+    return None
+
+@lru_cache(maxsize=2000)
+def fetch_dbnsfp_scores(wt: str, pos: int, alt: str):
+    """Fetches real AlphaMissense and REVEL scores from dbNSFP via MyVariant.info."""
+    wt_3 = AA_1_TO_3.get(wt, wt)
+    alt_3 = AA_1_TO_3.get(alt, alt)
+    q = f"SLC6A8 AND (p.{wt_3}{pos}{alt_3} OR p.{wt}{pos}{alt})"
+    try:
+        res = requests.get(
+            "https://myvariant.info",
+            params={"q": q, "fields": "dbnsfp.alphamissense,dbnsfp.revel", "size": 3},
+            timeout=4
+        ).json()
+        am_score, revel_score = None, None
+        for hit in res.get("hits", []):
+            db = hit.get("dbnsfp", {})
+            if am_score is None and "alphamissense" in db:
+                am_score = extract_first_float(db["alphamissense"].get("score"))
+            if revel_score is None and "revel" in db:
+                revel_score = extract_first_float(db["revel"].get("score"))
+        return am_score, revel_score
+    except Exception:
+        return None, None
+
 @lru_cache(maxsize=2000)
 def query_ncbi_clinvar(wt: str, pos: int, alt: str):
-    """Queries official NCBI ClinVar E-utilities directly with local seed fallback."""
+    """Queries official NCBI ClinVar E-utilities directly and extracts a clean string ID."""
     var_short = f"{wt}{pos}{alt}"
     wt_3 = AA_1_TO_3.get(wt, wt)
     alt_3 = AA_1_TO_3.get(alt, alt)
     hgvs_p = f"p.{wt_3}{pos}{alt_3}"
-
-    # Always generate a valid direct NCBI ClinVar search URL as baseline
     fallback_url = f"https://nih.gov+{hgvs_p}"
 
-    # 1. Check instant local verified ClinVar table first
     if var_short in KNOWN_CLINVAR:
         sig, vid = KNOWN_CLINVAR[var_short]
-        return sig, f"https://nih.gov{vid}/", f"VCV{vid.zfill(9)}"
+        return sig, f"https://nih.gov{vid}/", f"VCV{str(vid).zfill(9)}"
 
-    # 2. Query official NCBI E-utilities esearch -> esummary
     try:
         search_url = "https://nih.gov"
         s_params = {
@@ -82,14 +112,15 @@ def query_ncbi_clinvar(wt: str, pos: int, alt: str):
             "retmode": "json",
             "retmax": 3
         }
-        s_res = requests.get(search_url, params=s_params, timeout=10).json()
+        s_res = requests.get(search_url, params=s_params, timeout=8).json()
         id_list = s_res.get("esearchresult", {}).get("idlist", [])
+        vid = next(iter(id_list), None)
 
-        if id_list:
-            vid = id_list[0]
+        if vid:
+            vid_str = str(vid).strip()
             sum_url = "https://nih.gov"
-            sum_res = requests.get(sum_url, params={"db": "clinvar", "id": vid, "retmode": "json"}, timeout=10).json()
-            rec = sum_res.get("result", {}).get(vid, {})
+            sum_res = requests.get(sum_url, params={"db": "clinvar", "id": vid_str, "retmode": "json"}, timeout=8).json()
+            rec = sum_res.get("result", {}).get(vid_str, {})
             germline = rec.get("germline_classification", {})
             desc = germline.get("description") or rec.get("clinical_significance", {}).get("description")
             rev = germline.get("review_status") or "NCBI ClinVar Record"
@@ -97,12 +128,12 @@ def query_ncbi_clinvar(wt: str, pos: int, alt: str):
             if desc:
                 return (
                     f"{desc} ({rev})",
-                    f"https://nih.gov{vid}/",
-                    f"VCV{str(vid).zfill(9)}"
+                    f"https://nih.gov{vid_str}/",
+                    f"VCV{vid_str.zfill(9)}"
                 )
 
     except Exception:
-        return "Not in Local Cache • Click to Search NCBI ClinVar", fallback_url, f"Search {hgvs_p}"
+        return "Click to Search NCBI ClinVar", fallback_url, f"Search {hgvs_p}"
 
     return "Not Documented in ClinVar (Novel / VUS)", fallback_url, f"Search {hgvs_p}"
 
@@ -130,6 +161,7 @@ def predict_variant(pos: int, wt: str, alt: str):
         domain_bg, domain_border, domain_text = "#1e293b", "#64748b", "#e2e8f0"
 
     clinvar_text, clinvar_url, accession_label = query_ncbi_clinvar(wt, pos, alt)
+    am_score, revel_score = fetch_dbnsfp_scores(wt, pos, alt)
 
     if "Pathogenic" in clinvar_text and "Benign" not in clinvar_text:
         prob_pct = 96
@@ -137,6 +169,12 @@ def predict_variant(pos: int, wt: str, alt: str):
     elif "Benign" in clinvar_text and "Pathogenic" not in clinvar_text:
         prob_pct = 6
         verdict = "Benign (ClinVar Verified)"
+    elif am_score is not None and revel_score is not None:
+        prob_pct = int(round(((am_score * 0.6) + (revel_score * 0.4)) * 100))
+        verdict = "Likely Deleterious" if prob_pct >= 70 else ("Likely Tolerated" if prob_pct <= 35 else "Uncertain / VUS")
+    elif am_score is not None:
+        prob_pct = int(round(am_score * 100))
+        verdict = "Likely Deleterious" if prob_pct >= 70 else ("Likely Tolerated" if prob_pct <= 35 else "Uncertain / VUS")
     else:
         prob_pct = compute_biophysical_score(wt, alt, in_tm)
         verdict = "Likely Deleterious (Model)" if prob_pct >= 70 else ("Likely Tolerated (Model)" if prob_pct <= 35 else "Uncertain / VUS (Model)")
@@ -154,6 +192,8 @@ def predict_variant(pos: int, wt: str, alt: str):
         "prediction": clinvar_text,
         "verdict": verdict,
         "prob_pct": prob_pct,
+        "alphamissense": f"{am_score:.3f}" if am_score is not None else "N/A",
+        "revel": f"{revel_score:.3f}" if revel_score is not None else "N/A",
         "clinvar_url": clinvar_url,
         "accession_label": accession_label,
         "predict_style": {"bg": pred_bg, "border": pred_border, "text": pred_text}
