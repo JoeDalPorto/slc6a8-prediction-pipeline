@@ -282,7 +282,7 @@
             el('pill-txt').textContent = labelText;
         }
 
-        async function runPipeline() {
+                async function runPipeline() {
             const pos = parseInt(el('pos-slider').value, 10);
             el('pos-badge').textContent = pos;
             const wt = REF_SEQ.charAt(pos - 1);
@@ -302,15 +302,12 @@
                 el('domain-title').textContent = region;
                 Object.assign(el('domain-card').style, { backgroundColor: '#0f233c', borderColor: '#38bdf8', color: '#bae6fd' });
             }
-     
-            const baselineUrl = "https://nih.gov+" + variantLabel;
-            el('clinvar-link').href = baselineUrl;
+
+            // Valid NCBI ClinVar search link (never loops back to dashboard)
+            const ncbiSearchUrl = "https://nih.gov+" + variantLabel;
+            el('clinvar-link').href = ncbiSearchUrl;
             el('clinvar-accession').textContent = "Search " + variantLabel;
             el('clinvar-link-container').classList.remove('hidden');
-
-            try {
-                const res = await fetch(API_BASE + "/predict?pos=" + pos + "&wt=" + wt + "&alt=" + alt);
-                const data = await res.json();
 
             try {
                 const res = await fetch(API_BASE + "/predict?pos=" + pos + "&wt=" + wt + "&alt=" + alt);
@@ -323,19 +320,15 @@
                 el('revel-badge').textContent = data.revel;
                 el('prob-bar').style.width = pct + "%";
                 el('prob-bar').style.backgroundColor = data.predict_style.border;
+                Object.assign(el('prob-card').style, { backgroundColor: data.predict_style.bg, borderColor: data.predict_style.border, color: data.predict_style.text });
 
                 el('predict-title').textContent = data.prediction;
-                Object.assign(el('predict-card').style, { backgroundColor: data.predict_style.bg, borderColor: data.predict_style.border, color: data.predict_style.text });
                 if (data.clinvar_url) {
                     el('clinvar-link').href = data.clinvar_url;
                     el('clinvar-accession').textContent = data.accession_label;
-                    el('clinvar-link-container').classList.remove('hidden');
-                } else {
-                    el('clinvar-link-container').classList.add('hidden');
                 }
             } catch (err) {
-                el('predict-title').textContent = "Local Preview Mode (Start FastAPI for Live ClinVar)";
-                el('clinvar-link-container').classList.add('hidden');
+                el('predict-title').textContent = "Waking up cloud server...";
             }
         }
 
