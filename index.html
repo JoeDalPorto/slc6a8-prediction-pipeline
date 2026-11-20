@@ -108,7 +108,7 @@
                                 <strong id="revel-badge" class="font-bold">N/A</strong>
                             </div>
                             <div id="clinvar-link-container" class="pt-1 hidden">
-                                <a id="clinvar-link" href="#" target="_blank" rel="noopener noreferrer" 
+                                <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer" 
                                    class="inline-flex items-center gap-1.5 text-[11px] font-bold bg-[#0b0f19] hover:bg-slate-800 text-sky-300 px-2.5 py-1 rounded border border-sky-500/40">
                                     🔗 NCBI Record: <span id="clinvar-accession">VCV000000000</span> ↗
                                 </a>
@@ -302,6 +302,15 @@
                 el('domain-title').textContent = region;
                 Object.assign(el('domain-card').style, { backgroundColor: '#0f233c', borderColor: '#38bdf8', color: '#bae6fd' });
             }
+     
+            const baselineUrl = "https://nih.gov+" + variantLabel;
+            el('clinvar-link').href = baselineUrl;
+            el('clinvar-accession').textContent = "Search " + variantLabel;
+            el('clinvar-link-container').classList.remove('hidden');
+
+            try {
+                const res = await fetch(API_BASE + "/predict?pos=" + pos + "&wt=" + wt + "&alt=" + alt);
+                const data = await res.json();
 
             try {
                 const res = await fetch(API_BASE + "/predict?pos=" + pos + "&wt=" + wt + "&alt=" + alt);
