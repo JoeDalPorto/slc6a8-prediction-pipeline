@@ -435,9 +435,13 @@
 
     el('active-marker').setAttribute('transform', 'translate(' + pObj.x.toFixed(1) + ', ' + pObj.y.toFixed(1) + ')');
 
-    const cv = Reflect.get(CLINVAR_DB, variantLabel);
-    const linkUrl = new URL("https://nih.gov");
+        const cv = Reflect.get(CLINVAR_DB, variantLabel);
+    const hgvs3 = "p." + wtInfo.short + pos + Reflect.get(AA_INFO, alt).short;
+    const baseClinVar = "https:" + "//www.ncbi.nlm.nih.gov/clinvar/";
+    const searchUrl = baseClinVar + "?term=SLC6A8%5Bgene%5D+AND+" + encodeURIComponent(hgvs3);
+
     let score = 0.180, cons = pObj.inTM ? 84.5 : 69.0;
+    el('clinvar-link').href = searchUrl;
 
     if (cv) {
       score = cv.score;
@@ -445,8 +449,7 @@
       el('cv-status').textContent = cv.sig;
       el('cv-status').style.color = score >= 0.65 ? "#fb7185" : "#34d399";
       el('cv-dot').style.background = score >= 0.65 ? "#fb7185" : "#34d399";
-      linkUrl.pathname = "/clinvar/variation/" + cv.vid + "/";
-      el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0") + " ↗";
+      el('clinvar-accession').textContent = "ClinVar: " + hgvs3 + " ↗";
     } else {
       const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
       const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
@@ -456,11 +459,22 @@
       el('cv-status').textContent = "VUS";
       el('cv-status').style.color = "#34d399";
       el('cv-dot').style.background = "#34d399";
-      linkUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
-      el('clinvar-accession').textContent = "Search " + variantLabel + " ↗";
+      el('clinvar-accession').textContent = "Search " + hgvs3 + " ↗";
     }
 
-    el('clinvar-link').href = linkUrl.toString();
+    // Live background verification against NCBI E-utilities to upgrade to direct VCV record when available
+    const apiBase = "https:" + "//eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
+    fetch(apiBase + "?db=clinvar&retmode=json&term=" + encodeURIComponent("SLC6A8[gene] AND " + hgvs3))
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const ids = data && data.esearchresult && data.esearchresult.idlist;
+        const realId = ids && ids.at(0);
+        if (realId && el('clinvar-link').href === searchUrl) {
+          el('clinvar-link').href = baseClinVar + "variation/" + realId + "/";
+          el('clinvar-accession').textContent = "VCV" + String(realId).padStart(9, "0") + " ↗";
+        }
+      }).catch(() => {});
+
     el('conservation-val').textContent = cons.toFixed(1) + "%";
     el('pred-score').textContent = score.toFixed(3);
 
