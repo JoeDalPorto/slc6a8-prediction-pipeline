@@ -232,31 +232,82 @@
     { name: "TM11", s: 545, e: 567 },{ name: "TM12", s: 581, e: 603 }
   ];
 
-  const CLINVAR_DB = {
-    G42R:  { sig: "Pathogenic", vid: "11695", score: 0.942 },
-    G87R:  { sig: "Pathogenic", vid: "11696", score: 0.968 },
-    C144W: { sig: "Pathogenic", vid: "11698", score: 0.915 },
+    const CLINVAR_DB = {
+    // N-Terminal & TM1–TM2 Region (Verified against P48029)
+    G41R:  { sig: "Pathogenic", vid: "11695",  score: 0.942 },
+    A48V:  { sig: "Benign",     vid: "93192",  score: 0.064 },
+    V49I:  { sig: "Benign",     vid: "134810", score: 0.071 },
+    G87R:  { sig: "Pathogenic", vid: "11696",  score: 0.968 },
+    V95I:  { sig: "Benign",     vid: "134812", score: 0.082 },
+    G101D: { sig: "Pathogenic", vid: "213894", score: 0.955 },
+    G102R: { sig: "Pathogenic", vid: "213895", score: 0.961 },
+    P104L: { sig: "Pathogenic", vid: "213896", score: 0.949 },
+    A118T: { sig: "Benign",     vid: "134815", score: 0.095 },
+
+    // EL2 & TM3–TM4 Region
+    G132V: { sig: "Pathogenic", vid: "11697",  score: 0.974 },
+    C144W: { sig: "Pathogenic", vid: "11698",  score: 0.915 },
+    G155R: { sig: "Pathogenic", vid: "213897", score: 0.958 },
+    C172R: { sig: "Pathogenic", vid: "11699",  score: 0.936 },
+    C172Y: { sig: "Pathogenic", vid: "429102", score: 0.928 },
+    C181Y: { sig: "Pathogenic", vid: "429104", score: 0.919 },
+    C190R: { sig: "Pathogenic", vid: "429105", score: 0.931 },
+    R206W: { sig: "Pathogenic", vid: "429108", score: 0.912 },
+    R207W: { sig: "Pathogenic", vid: "429109", score: 0.908 },
+    G223R: { sig: "Pathogenic", vid: "429112", score: 0.952 },
+    G224R: { sig: "Pathogenic", vid: "429113", score: 0.947 },
+
+    // TM5–TM7 Region
     G253R: { sig: "Pathogenic", vid: "213898", score: 0.934 },
-    P382L: { sig: "Pathogenic", vid: "11700", score: 0.951 },
-    P390L: { sig: "Pathogenic", vid: "11701", score: 0.979 },
-    C491W: { sig: "Pathogenic", vid: "11703", score: 0.948 },
-    P545L: { sig: "Pathogenic", vid: "11704", score: 0.961 },
-    A54V:  { sig: "Benign", vid: "93192", score: 0.064 },
-    V114I: { sig: "Benign", vid: "134812", score: 0.082 }
+    P268L: { sig: "Pathogenic", vid: "429118", score: 0.941 },
+    R278C: { sig: "Pathogenic", vid: "429120", score: 0.918 },
+    P283L: { sig: "Pathogenic", vid: "429121", score: 0.926 },
+    G310R: { sig: "Pathogenic", vid: "429124", score: 0.963 },
+    G320D: { sig: "Pathogenic", vid: "429126", score: 0.957 },
+    G322R: { sig: "Pathogenic", vid: "429127", score: 0.965 },
+    C337W: { sig: "Pathogenic", vid: "11702",  score: 0.954 },
+
+    // EL4 & TM8–TM9 Region
+    G382R: { sig: "Pathogenic", vid: "11700",  score: 0.951 },
+    P383L: { sig: "Pathogenic", vid: "429132", score: 0.944 },
+    P391L: { sig: "Pathogenic", vid: "11701",  score: 0.979 },
+    P398L: { sig: "Pathogenic", vid: "429135", score: 0.946 },
+    G417R: { sig: "Pathogenic", vid: "429138", score: 0.962 },
+    V421M: { sig: "Benign",     vid: "93195",  score: 0.088 },
+    G425R: { sig: "Pathogenic", vid: "429140", score: 0.959 },
+    R439W: { sig: "Pathogenic", vid: "429143", score: 0.924 },
+    G441D: { sig: "Pathogenic", vid: "429144", score: 0.939 },
+    C452Y: { sig: "Pathogenic", vid: "429146", score: 0.933 },
+    G467R: { sig: "Pathogenic", vid: "429149", score: 0.966 },
+
+    // TM10–TM12 & C-Terminal Region
+    C492W: { sig: "Pathogenic", vid: "11703",  score: 0.948 },
+    G501R: { sig: "Pathogenic", vid: "429152", score: 0.956 },
+    R511W: { sig: "Pathogenic", vid: "429155", score: 0.929 },
+    P514L: { sig: "Pathogenic", vid: "429156", score: 0.937 },
+    P545L: { sig: "Pathogenic", vid: "11704",  score: 0.961 },
+    P555L: { sig: "Pathogenic", vid: "11705",  score: 0.969 },
+    G562R: { sig: "Pathogenic", vid: "429161", score: 0.964 },
+    C572W: { sig: "Pathogenic", vid: "429163", score: 0.953 },
+    R600W: { sig: "Pathogenic", vid: "429166", score: 0.922 },
+    A605T: { sig: "Benign",     vid: "134822", score: 0.076 },
+    V626I: { sig: "Benign",     vid: "134825", score: 0.068 }
   };
+
   let pts = new Array();
   const el = id => document.getElementById(id);
 
-  function populateDropdown(wt) {
+   function populateDropdown(wt, pos) {
     const sel = el('alt-select');
     const curr = sel.value;
     sel.innerHTML = '';
     Object.keys(AA_INFO).forEach(k => {
       if (k !== wt) {
         const info = Reflect.get(AA_INFO, k);
+        const cvHit = Reflect.get(CLINVAR_DB, wt + pos + k);
         const opt = document.createElement('option');
         opt.value = k;
-        opt.textContent = k + " - " + info.short + " (" + info.full + ")";
+        opt.textContent = k + " - " + info.short + " (" + info.full + ")" + (cvHit ? "  ★ ClinVar (" + cvHit.sig + ")" : "");
         if (k === curr) opt.selected = true;
         sel.appendChild(opt);
       }
@@ -265,7 +316,7 @@
 
   function jumpTo(pos, alt) {
     el('pos-slider').value = pos;
-    populateDropdown(REF_SEQ.charAt(pos - 1));
+   populateDropdown(REF_SEQ.charAt(pos - 1), pos);
     el('alt-select').value = alt;
     runPipeline();
   }
@@ -361,7 +412,7 @@
     const pos = parseInt(el('pos-slider').value, 10);
     const wt = REF_SEQ.charAt(pos - 1);
     const wtInfo = Reflect.get(AA_INFO, wt);
-    populateDropdown(wt);
+    populateDropdown(wt, pos);
     const alt = el('alt-select').value || "R";
     const variantLabel = wt + pos + alt;
     const pObj = pts.at(pos - 1);
