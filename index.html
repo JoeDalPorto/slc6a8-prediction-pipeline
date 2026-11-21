@@ -43,11 +43,11 @@
   .wt-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: #cbd5e1; }
   .wt-pill { background: #252c3a; color: #fbbf24; font-family: monospace; font-weight: 700; padding: 2px 8px; border-radius: 5px; border: 1px solid #3b4458; }
   .metrics {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
     padding: 16px 0 6px; text-align: center;
   }
-  .metric-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .metric-mid { border-left: 1px solid #2a3140; border-right: 1px solid #2a3140; }
+  .metric-col { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 4px; }
+  .metric-sep { border-left: 1px solid #2a3140; }
   .metric-lbl { font-size: 12px; color: #94a3b8; font-weight: 500; }
   .score-pill { background: #12161f; border: 1px solid #334155; padding: 2px 8px; border-radius: 5px; font-family: monospace; font-size: 12px; font-weight: 700; color: #fff; }
   .dock {
@@ -123,7 +123,8 @@
       </div>
     </div>
 
-    <div class="metrics">
+        <div class="metrics">
+      <!-- 1. ClinVar DB Ref -->
       <div class="metric-col">
         <span class="metric-lbl">ClinVar DB Ref</span>
         <div style="display:flex; align-items:center; gap:6px; font-weight:700; font-size:14px;">
@@ -135,20 +136,28 @@
         </a>
       </div>
 
-      <div class="metric-col metric-mid">
-        <span class="metric-lbl">Conservation</span>
-        <span id="conservation-val" style="font-size:18px; font-weight:800; font-family:monospace; color:#fff;">69.0%</span>
-      </div>
-
-      <div class="metric-col">
+      <!-- 2. Predictive Score -->
+      <div class="metric-col metric-sep">
         <span class="metric-lbl">Predictive Score</span>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span id="pred-verdict" style="font-size:14px; font-weight:700; color:#34d399;">Tolerated</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span id="pred-verdict" style="font-size:13.5px; font-weight:700; color:#34d399;">Tolerated</span>
           <span id="pred-score" class="score-pill">0.180</span>
         </div>
       </div>
+
+      <!-- 3. Folding Stability -->
+      <div class="metric-col metric-sep">
+        <span class="metric-lbl">Folding Stability</span>
+        <span id="ddg-val" style="font-size:15px; font-weight:800; font-family:monospace; color:#38bdf8;">+0.3 kcal/mol</span>
+        <span id="ddg-label" style="font-size:10.5px; color:#94a3b8; font-family:monospace;">Fold-Neutral</span>
+      </div>
+
+      <!-- 4. Conservation % -->
+      <div class="metric-col metric-sep">
+        <span class="metric-lbl">Conservation</span>
+        <span id="conservation-val" style="font-size:17px; font-weight:800; font-family:monospace; color:#fff;">69.0%</span>
+      </div>
     </div>
-  </div>
 
   <div class="dock">
     <div class="slider-row">
@@ -222,7 +231,32 @@
     W:-0.9, Y:-1.3, P:-1.6, H:-3.2, E:-3.5, Q:-3.5, D:-3.5, N:-3.5, K:-3.9, R:-4.5
   };
   const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
+  const VOLUME = {
+    G:60, A:88, S:89, C:108, D:111, P:112, N:114, T:116, E:138, V:140,
+    Q:143, H:153, M:162, I:166, L:166, K:168, R:173, F:189, Y:193, W:227
+  };
 
+  // Estimates folding free-energy change (ddG in kcal/mol) from steric & membrane burial shifts
+  function computeFoldingDeltaG(pos, wt, alt, pObj) {
+    const dv = Math.abs((Reflect.get(VOLUME, alt) || 130) - (Reflect.get(VOLUME, wt) || 130));
+    const dh = (Reflect.get(HYDROPATHY, wt) || 0) - (Reflect.get(HYDROPATHY, alt) || 0);
+    const qAlt = Math.abs(Reflect.get(CHARGE, alt) || 0);
+    const qWt = Math.abs(Reflect.get(CHARGE, wt) || 0);
+
+    let ddg = 0.15 + (dv / 95.0);
+    if (pObj.inTM) {
+      ddg += 0.45;
+      if (qAlt > 0 && qWt === 0) ddg += 1.65; // Unpaired charge burial inside lipid bilayer
+      if (dh > 2.5) ddg += 0.75;               // Hydrophobic-to-polar core disruption
+      if (alt === "P" || wt === "P" || wt === "G") ddg += 1.15; // Helix kink/packing disruption
+    } else if (wt === "C" && pos >= 170 && pos <= 195) {
+      ddg += 1.80; // EL2 structural disulfide loss
+    } else if (wt === "P" || alt === "P") {
+      ddg += 0.75; // Loop turn rigidity shift
+    }
+    return Math.min(Math.max(ddg, -0.2), 4.8);
+  }
+ 
   const TM_LIST = [
     { name: "TM1", s: 61, e: 83 },   { name: "TM2", s: 95, e: 117 },
     { name: "TM3", s: 153, e: 175 }, { name: "TM4", s: 219, e: 241 },
@@ -512,6 +546,19 @@
       }).catch(() => {});
 
     el('conservation-val').textContent = cons.toFixed(1) + "%";
+      const ddg = computeFoldingDeltaG(pos, wt, alt, pObj);
+    el('ddg-val').textContent = (ddg >= 0 ? "+" : "") + ddg.toFixed(1) + " kcal/mol";
+    if (ddg >= 1.8) {
+      el('ddg-val').style.color = "#fb7185";
+      el('ddg-label').textContent = "Destabilizing (ER Risk)";
+    } else if (ddg >= 1.0) {
+      el('ddg-val').style.color = "#fcd34d";
+      el('ddg-label').textContent = "Moderately Destabilizing";
+    } else {
+      el('ddg-val').style.color = "#38bdf8";
+      el('ddg-label').textContent = "Fold-Neutral";
+    }
+
     el('pred-score').textContent = score.toFixed(3);
 
     if (score >= 0.65) {
