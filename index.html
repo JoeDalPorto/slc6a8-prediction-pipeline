@@ -192,6 +192,22 @@
         <select id="alt-select"></select>
       </div>
     </div>
+       <!-- SESSION VARIANT LOG & CSV EXPORT BAR -->
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid #2f3747;">
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+        <input type="text" id="tester-note" placeholder="Optional tester note (e.g., check EL2 boundary or score)..."
+               style="flex:1; min-width:200px; background:#161b24; color:#f8fafc; border:1px solid #2f3747; border-radius:7px; padding:7px 11px; font-size:12px;">
+        <button id="btn-log-var" style="background:#2563eb; color:#fff; border:1px solid #3b82f6; border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;">+ Log Variant</button>
+        <span style="background:#131720; color:#94a3b8; border:1px solid #334155; border-radius:7px; padding:6px 10px; font-family:monospace; font-size:11.5px; font-weight:700;">
+          Logged: <strong id="log-count" style="color:#38bdf8;">0</strong>
+        </span>
+        <button id="btn-export-csv" style="background:#065f46; color:#d1fae5; border:1px solid #10b981; border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;">⬇ Export CSV</button>
+        <button id="btn-clear-log" style="background:#1e2533; color:#94a3b8; border:1px solid #334155; border-radius:7px; padding:7px 10px; font-size:11.5px; cursor:pointer;">Clear</button>
+      </div>
+
+      <!-- Compact Scrollable Preview of Logged Variants -->
+      <div id="log-preview" style="display:none; margin-top:10px; max-height:110px; overflow-y:auto; background:#131720; border:1px solid #2a3140; border-radius:8px; padding:6px 10px; font-family:monospace; font-size:11px;"></div>
+    </div>
   </div>
 
 <div class="foot-bar">
@@ -629,6 +645,103 @@
   el('alt-select').addEventListener('change', runPipeline);
   el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
   el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
+  // Session Variant Logger & CSV Exporter
+  let sessionLog = new Array();
+
+  function csvEscape(val) {
+    const str = String(val == null ? "" : val).replace(/"/g, '""');
+    return '"' + str + '"';
+  }
+
+  function renderSessionLog() {
+    el('log-count').textContent = sessionLog.length;
+    const box = el('log-preview');
+    if (sessionLog.length === 0) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    box.style.display = 'block';
+    let rowsHtml = '';
+    sessionLog.slice().reverse().forEach(item => {
+      const noteTag = item.note ? ' <span style="color:#fbbf24;">• "' + item.note + '"</span>' : '';
+      rowsHtml += '<div style="padding:3px 0; border-bottom:1px solid #1e2533; display:flex; justify-content:space-between; gap:8px;">' +
+        '<span><strong style="color:#38bdf8;">' + item.v1 + '</strong> (' + item.hgvs + ') • ' + item.domain + noteTag + '</span>' +
+        '<span style="color:#cbd5e1; shrink:0;">' + item.clinvar + ' | ' + item.score + ' (' + item.verdict + ')</span>' +
+        '</div>';
+    });
+    box.innerHTML = rowsHtml;
+  }
+
+  function logCurrentVariant() {
+    const pos = parseInt(el('pos-slider').value, 10);
+    const wt = REF_SEQ.charAt(pos - 1);
+    const alt = el('alt-select').value || "R";
+    const wtInfo = Reflect.get(AA_INFO, wt);
+    const altInfo = Reflect.get(AA_INFO, alt);
+    const pObj = pts.at(pos - 1);
+    const role = Reflect.get(TRANSPORT_SITES, pos) || "None";
+
+    sessionLog.push({
+      v1: wt + pos + alt,
+      hgvs: "p." + wtInfo.short + pos + altInfo.short,
+      pos: pos,
+      domain: pObj ? pObj.domainLabel : "Unknown",
+      role: role,
+      clinvar: el('cv-status').textContent,
+      score: el('pred-score').textContent,
+      verdict: el('pred-verdict').textContent,
+      ddg: el('ddg-val').textContent.replace(" kcal/mol", ""),
+      stability: el('ddg-label').textContent,
+      conservation: el('conservation-val').textContent,
+      note: el('tester-note').value.trim()
+    });
+
+    el('tester-note').value = "";
+    renderSessionLog();
+  }
+
+  function exportSessionCsv() {
+    if (sessionLog.length === 0) {
+      const btn = el('btn-export-csv');
+      const orig = btn.textContent;
+      btn.textContent = "Log a variant first!";
+      setTimeout(() => { btn.textContent = orig; }, 1600);
+      return;
+    }
+
+    const headers = Array.of(
+      "Variant_1Letter", "Variant_HGVS", "Position", "Structural_Domain",
+      "Transport_Site_Role", "ClinVar_Status", "Predictive_Score",
+      "Predictive_Verdict", "Folding_ddG_kcal_mol", "Stability_Impact",
+      "Conservation_Pct", "Tester_Notes"
+    );
+
+    const lines = Array.of(headers.join(","));
+    sessionLog.forEach(r => {
+      lines.push(Array.of(
+        csvEscape(r.v1), csvEscape(r.hgvs), csvEscape(r.pos), csvEscape(r.domain),
+        csvEscape(r.role), csvEscape(r.clinvar), csvEscape(r.score),
+        csvEscape(r.verdict), csvEscape(r.ddg), csvEscape(r.stability),
+        csvEscape(r.conservation), csvEscape(r.note)
+      ).join(","));
+    });
+
+    const blob = new Blob(Array.of(lines.join("\n")), { type: "text/csv;charset=utf-8;" });
+    const dlUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = dlUrl;
+    a.download = "SLC6A8_Variant_Log_" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(dlUrl);
+  }
+
+  el('btn-log-var').addEventListener('click', logCurrentVariant);
+  el('btn-export-csv').addEventListener('click', exportSessionCsv);
+  el('btn-clear-log').addEventListener('click', () => { sessionLog = new Array(); renderSessionLog(); });
+  el('tester-note').addEventListener('keydown', e => { if (e.key === "Enter") logCurrentVariant(); });
 
   buildStylizedTopology();
   runPipeline();
