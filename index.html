@@ -83,17 +83,16 @@
 <body>
 <div class="shell">
   <div class="main-body">
-    <div class="header-row">
+       <div class="header-row">
       <div>
         <div class="sub-kicker">LEUT-FOLD MODEL VIEW</div>
         <h1 class="main-title">SLC6A8 Transmembrane Topology</h1>
       </div>
-      <div class="preset-bar">
-        <span style="font-size:10px; color:#94a3b8; font-weight:700;">HOTSPOTS:</span>
-        <button class="preset-btn" onclick="jumpTo(41,'R')">G41R</button>
-        <button class="preset-btn" onclick="jumpTo(87,'R')">G87R</button>
-        <button class="preset-btn" onclick="jumpTo(390,'L')">P390L</button>
-        <button class="preset-btn" onclick="jumpTo(554,'L')">P554L</button>
+      <div style="background:#131720; border:1px solid #334155; padding:5px 12px; border-radius:8px; font-size:12px;">
+        <label style="display:flex; align-items:center; gap:7px; cursor:pointer; color:#fbbf24; font-weight:600;">
+          <input type="checkbox" id="toggle-transport" checked style="accent-color:#fbbf24; cursor:pointer;">
+          <span>● Solute / Ion Binding Sites (18)</span>
+        </label>
       </div>
     </div>
 
@@ -107,6 +106,7 @@
         <text x="12" y="184" fill="#64748b" font-size="10">Cytoplasmic Matrix</text>
         <g id="svg-capsules"></g>
         <g id="svg-residues"></g>
+        <g id="svg-transport"></g>
         <g id="active-marker">
           <circle r="11" fill="rgba(239, 68, 68, 0.35)"></circle>
           <circle r="5.5" fill="#ef4444" stroke="#ffffff" stroke-width="2"></circle>
@@ -327,6 +327,27 @@
     A605T: { sig: "Benign",     vid: "134822", score: 0.076 },
     V626I: { sig: "Benign",     vid: "134825", score: 0.068 }
   };
+  // 18 Non-Contiguous SLC6A8 Solute & Ion-Binding Residues (LeuT-Fold Core)
+  const TRANSPORT_SITES = {
+    68:  "Creatine Binding Pocket (TM1a)",
+    72:  "Creatine / Na1 Coordination (TM1)",
+    73:  "Na1 & Creatine Site (TM1 Unwound)",
+    75:  "Unwound Hinge Motif (TM1)",
+    76:  "Unwound Hinge Motif (TM1)",
+    159: "Aromatic Lid / Creatine Pocket (TM3)",
+    162: "Substrate Specificity Pocket (TM3)",
+    163: "Creatine Guanidinium Site (TM3)",
+    315: "Extracellular Gate / Aromatic Lid (TM6a)",
+    316: "Creatine Carboxyl Coordination (TM6)",
+    319: "Unwound Core Hinge (TM6)",
+    320: "Unwound Core Hinge (TM6)",
+    323: "Na2 / Substrate Coupling (TM6b)",
+    356: "Chloride (Cl⁻) Coordination Site (TM7)",
+    357: "Chloride (Cl⁻) Coordination Site (TM7)",
+    412: "Na2 Ion Binding Site (TM8)",
+    415: "Na2 / Substrate Coupling (TM8)",
+    416: "Na2 & Cl⁻ Network (TM8)"
+  };
 
   let pts = new Array();
   const el = id => document.getElementById(id);
@@ -441,6 +462,31 @@
         runPipeline();
       });
     });
+       // Render 18 Non-Contiguous Solute Transport & Ion-Binding Markers
+    const transLayer = el('svg-transport');
+    let transHtml = '';
+    Object.keys(TRANSPORT_SITES).forEach(posStr => {
+      const pPos = parseInt(posStr, 10);
+      const p = pts.at(pPos - 1);
+      if (p) {
+        transHtml += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+          '" r="4" fill="#fbbf24" stroke="#131720" stroke-width="1.2" style="cursor:pointer;"></circle>';
+      }
+    });
+    transLayer.innerHTML = transHtml;
+
+    transLayer.querySelectorAll('circle').forEach(c => {
+      const pPos = parseInt(c.getAttribute('data-pos'), 10);
+      c.addEventListener('click', () => {
+        el('pos-slider').value = pPos;
+        runPipeline();
+      });
+    });
+
+    el('toggle-transport').addEventListener('change', e => {
+      transLayer.style.display = e.target.checked ? 'inline' : 'none';
+    });
+
   }
   // Position-specific SLC6 neurotransmitter transporter conservation profile (%)
   function getResidueConservation(pos, wt, pObj) {
@@ -492,7 +538,10 @@
     el('wt-badge').textContent = wt + pos;
     el('wt-full-label').textContent = wtInfo.short + " (" + wtInfo.full + ")";
     el('wt-code-tag').textContent = "WT: " + wt;
-    el('domain-title').textContent = pObj.domainLabel;
+        const role = Reflect.get(TRANSPORT_SITES, pos);
+    el('domain-title').innerHTML = role
+      ? pObj.domainLabel + '<div style="font-size:11px; color:#fbbf24; margin-top:3px;">★ ' + role + '</div>'
+      : pObj.domainLabel;
 
     TM_LIST.forEach(tm => {
       const rect = el('cap-' + tm.name);
@@ -524,7 +573,7 @@
       const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
       const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
       const breaker = pObj.inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
-      let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0);
+      let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0) + (role ? 0.24 : 0);
       score = Math.min(Math.max(raw, 0.05), 0.96);
       el('cv-status').textContent = "VUS";
       el('cv-status').style.color = "#34d399";
