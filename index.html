@@ -117,34 +117,55 @@
     </main>
     <!-- BOTTOM CONTROL DOCK -->
     <footer class="bg-[#181d27] border-t border-slate-800/90 px-6 py-4">
-        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="flex-1">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+            
+            <!-- LEFT: Sequence Position Slider (7 cols) -->
+            <div class="lg:col-span-7">
                 <div class="flex items-center justify-between mb-2">
                     <label for="pos-slider" class="text-sm font-bold text-white">
                         SLC6A8 Sequence Position Locator <span class="text-slate-400 font-normal text-xs">(Range: 1 to 635)</span>
                     </label>
+                    <span class="text-xs font-mono text-sky-400 font-bold">AA #<span id="aa-num">1</span></span>
                 </div>
                 <input type="range" id="pos-slider" min="1" max="635" value="1" class="w-full cursor-pointer">
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-slate-400 font-semibold mr-1">Fine-tune:</span>
-                    <button id="btn-prev" class="bg-[#232b3b] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3 py-2 rounded-lg border border-slate-700">-1</button>
-                    <button id="btn-next" class="bg-[#232b3b] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3 py-2 rounded-lg border border-slate-700">+1</button>
-                </div>
-
-                <div class="bg-[#11151c] border border-slate-700 px-3.5 py-1.5 rounded-lg font-mono text-sm font-extrabold text-white">
-                    AA #<span id="aa-num">1</span>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <label for="alt-select" class="text-xs text-slate-400 font-semibold">Mutant:</label>
-                    <select id="alt-select" class="bg-[#11151c] border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono font-bold text-white"></select>
+                <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
+                    <span>1 (N-Term)</span>
+                    <span>318</span>
+                    <span>635 (C-Term)</span>
                 </div>
             </div>
+
+            <!-- RIGHT: Fine-Tune Steppers on Top + Wild-Type & Substitution Dropdown Below (5 cols) -->
+            <div class="lg:col-span-5 bg-[#11151c] p-3.5 rounded-xl border border-slate-800 space-y-3">
+                <!-- Row 1: Fine-Tune Step Buttons -->
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Fine-Tune Step:</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-prev" class="bg-[#1e2636] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3.5 py-1.5 rounded-lg border border-slate-700 active:scale-95">⬅ -1</button>
+                        <button id="btn-next" class="bg-[#1e2636] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3.5 py-1.5 rounded-lg border border-slate-700 active:scale-95">+1 ➡</button>
+                    </div>
+                </div>
+
+                <!-- Row 2: Wild-Type Indicator + Mutant Substitution Dropdown -->
+                <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-800/80">
+                    <div class="bg-[#181d27] px-3 py-2 rounded-lg border border-slate-700/70 flex flex-col justify-center">
+                        <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Wild-Type (WT)</span>
+                        <div class="flex items-baseline gap-1.5 mt-0.5">
+                            <span id="dock-wt-code" class="font-mono text-sm font-extrabold text-amber-300">M1</span>
+                            <span id="dock-wt-name" class="text-[11px] text-slate-400 truncate">Methionine</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#181d27] px-3 py-2 rounded-lg border border-slate-700/70 flex flex-col justify-center">
+                        <label for="alt-select" class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-0.5">Substitution (MUT)</label>
+                        <select id="alt-select" class="w-full bg-[#11151c] border border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-white cursor-pointer"></select>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </footer>
+
 
     <script>
         // Exact Canonical Human SLC6A8 Sequence (UniProt P48029 • 635 Amino Acids)
@@ -331,6 +352,8 @@
             el('aa-num').textContent = pos;
             el('wt-badge').textContent = wt + pos;
             el('wt-name').textContent = "(" + Reflect.get(AA_MAP, wt) + ")";
+            el('dock-wt-code').textContent = wt + pos;
+            el('dock-wt-name').textContent = Reflect.get(AA_MAP, wt);
             el('domain-title').textContent = pObj.domainLabel;
             el('backend-log').textContent = "Variant target: " + variantLabel + " • " + pObj.domainLabel;
 
