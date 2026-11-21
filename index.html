@@ -1,384 +1,437 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SLC6A8 Transmembrane Topology</title>
-    <script src="https://tailwindcss.com"></script>
-    <style>
-        * { outline: none !important; -webkit-tap-highlight-color: transparent; }
-        body { background-color: #0e1117; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        input[type="range"] { -webkit-appearance: none; background: #2c3342; height: 5px; border-radius: 999px; }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-            background: #3b82f6; border: 2px solid #93c5fd; cursor: pointer;
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
-        }
-        .tech-grid {
-            background-image:
-                linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLC6A8 Transmembrane Topology</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+  body {
+    background: #0e1117; color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .shell {
+    width: 100%; max-width: 820px; background: #1a1f29;
+    border: 1px solid #2a3140; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.65);
+  }
+  .main-body { padding: 20px 24px 12px; }
+  .header-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .sub-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #94a3b8; text-transform: uppercase; }
+  .main-title { font-size: 21px; font-weight: 800; color: #ffffff; margin-top: 2px; }
+  .preset-bar { display: flex; align-items: center; gap: 6px; }
+  .preset-btn {
+    background: #131720; color: #fda4af; border: 1px solid #334155;
+    padding: 3px 8px; border-radius: 5px; font-family: monospace; font-size: 11px; cursor: pointer;
+  }
+  .preset-btn:hover { background: #2d3545; }
+  .stage {
+    position: relative; width: 100%; background: #131720;
+    border: 1px solid #2a3140; border-radius: 12px; overflow: hidden;
+    background-image: linear-gradient(to right, rgba(148,163,184,0.04) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(148,163,184,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .domain-card {
+    position: absolute; bottom: 14px; right: 16px;
+    background: rgba(22, 27, 38, 0.96); border: 1px solid #334155;
+    border-radius: 12px; padding: 12px 16px; min-width: 220px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+  .domain-val { font-size: 14px; font-weight: 700; color: #38bdf8; margin-top: 3px; }
+  .wt-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: #cbd5e1; }
+  .wt-pill { background: #252c3a; color: #fbbf24; font-family: monospace; font-weight: 700; padding: 2px 8px; border-radius: 5px; border: 1px solid #3b4458; }
+  .metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    padding: 16px 0 6px; text-align: center;
+  }
+  .metric-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .metric-mid { border-left: 1px solid #2a3140; border-right: 1px solid #2a3140; }
+  .metric-lbl { font-size: 12px; color: #94a3b8; font-weight: 500; }
+  .score-pill { background: #12161f; border: 1px solid #334155; padding: 2px 8px; border-radius: 5px; font-family: monospace; font-size: 12px; font-weight: 700; color: #fff; }
+  .dock {
+    background: #232936; padding: 18px 24px 16px; border-top: 1px solid #2d3545;
+  }
+  .slider-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+  .slider-wrap { flex: 1; }
+  .slider { width: 100%; margin-top: 14px; accent-color: #3b82f6; cursor: pointer; }
+  .tune-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; shrink: 0; }
+  .tune-btn { background: #2c3444; color: #fff; border: 1px solid #3b4458; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .tune-btn:hover { background: #3b4458; }
+  .aa-badge { background: #131720; border: 1px solid #334155; border-radius: 6px; padding: 5px 14px; font-family: monospace; font-size: 13px; font-weight: 800; color: #fff; }
+  .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  @media (max-width: 640px) { .cards-grid { grid-template-columns: 1fr; } .domain-card { position: static; margin: 10px; } }
+  .field-lbl { font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; display: block; }
+  .wt-box {
+    background: #161b24; border: 1px solid #2f3747; border-radius: 8px;
+    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 13.5px; font-weight: 600; color: #f8fafc;
+  }
+  .wt-tag { background: #1e293b; color: #38bdf8; font-family: monospace; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 5px; border: 1px solid #334155; }
+  select {
+    width: 100%; background: #161b24; color: #f8fafc; border: 1px solid #2f3747;
+    border-radius: 8px; padding: 10px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .foot-bar {
+    background: #1d222d; padding: 10px 24px; border-top: 1px solid #2a3140;
+    display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #64748b;
+  }
+  .db-pill { background: #131720; color: #34d399; font-family: monospace; padding: 2px 8px; border-radius: 4px; border: 1px solid #2a3140; }
+</style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 select-none">
-
-    <!-- CENTERED COMPACT DASHBOARD CARD -->
-    <div class="w-full max-w-[840px] bg-[#1a1f29] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
-
-        <!-- TOP SESSION & LOG BAR -->
-        <div class="bg-[#232936] px-5 py-3.5 border-b border-slate-800 space-y-2 text-xs">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
-                    <span class="text-slate-200 font-semibold">Canonical Reference:</span>
-                    <code class="bg-[#141820] text-sky-400 px-2 py-0.5 rounded border border-slate-700/80 font-mono text-[11px]">UniProt P48029 (635 AA)</code>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 mr-1">Presets:</span>
-                    <button onclick="jumpTo(87, 'R')" class="bg-[#141820] hover:bg-slate-800 text-rose-300 border border-slate-700 px-2 py-0.5 rounded font-mono text-[11px]">G87R</button>
-                    <button onclick="jumpTo(390, 'L')" class="bg-[#141820] hover:bg-slate-800 text-rose-300 border border-slate-700 px-2 py-0.5 rounded font-mono text-[11px]">P390L</button>
-                    <button onclick="jumpTo(421, 'R')" class="bg-[#141820] hover:bg-slate-800 text-rose-300 border border-slate-700 px-2 py-0.5 rounded font-mono text-[11px]">G421R</button>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 text-amber-300/90 italic font-mono text-[11px]">
-                <span class="not-italic">🗂️</span>
-                <span id="backend-log">Backend Log: Variant substitution target mutated to A</span>
-            </div>
-        </div>
-        <!-- LEUT-FOLD MODEL VIEW -->
-        <div class="p-5 pb-3">
-            <div class="mb-2">
-                <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">LEUT-FOLD MODEL VIEW</div>
-                <h1 class="text-xl font-extrabold text-white tracking-tight">SLC6A8 Transmembrane Topology</h1>
-            </div>
-
-            <!-- TOPOLOGY SVG STAGE -->
-            <div class="relative w-full bg-[#131720] tech-grid rounded-xl border border-slate-800/90 overflow-hidden">
-                <svg id="leutSvg" viewBox="0 0 800 310" style="width:100%; height:300px; display:block;">
-                    <!-- Lipid Bilayer Band (Y = 65 to 180) -->
-                    <rect x="0" y="65" width="800" height="115" fill="rgba(30, 41, 59, 0.35)"></rect>
-                    <line x1="0" y1="65" x2="800" y2="65" stroke="#334155" stroke-width="1" stroke-dasharray="3 3"></line>
-                    <line x1="0" y1="180" x2="800" y2="180" stroke="#334155" stroke-width="1" stroke-dasharray="3 3"></line>
-
-                    <text x="12" y="55" fill="#64748b" font-size="10" font-family="sans-serif">Extracellular Space</text>
-                    <text x="12" y="80" fill="#64748b" font-size="10" font-family="sans-serif">Lipid Bilayer</text>
-                    <text x="12" y="196" fill="#64748b" font-size="10" font-family="sans-serif">Cytoplasmic Matrix</text>
-
-                    <g id="svg-capsules"></g>
-                    <g id="svg-residues"></g>
-
-                    <!-- Glowing Red/White Target Marker -->
-                    <g id="active-marker">
-                        <circle r="11" fill="rgba(239, 68, 68, 0.35)"></circle>
-                        <circle r="5.5" fill="#ef4444" stroke="#ffffff" stroke-width="2"></circle>
-                    </g>
-                </svg>
-
-                <!-- Floating ACTIVE STRUCTURAL DOMAIN Card (Bottom Right) -->
-                <div class="sm:absolute sm:bottom-3.5 sm:right-4 bg-[#181d27]/95 backdrop-blur border border-slate-700/80 rounded-xl px-4 py-3 shadow-xl min-w-[225px]">
-                    <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400">ACTIVE STRUCTURAL DOMAIN</div>
-                    <div id="domain-title" class="text-sm font-bold text-sky-400 mt-0.5">N-Terminal Cytoplasmic Tail</div>
-                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-300">
-                        <span>Wild-Type Res:</span>
-                        <span id="wt-badge" class="bg-[#252c3a] text-amber-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-700">M1</span>
-                        <span id="wt-name" class="text-slate-400 text-[11px]">(Met)</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3-COLUMN TELEMETRY BAR -->
-            <div class="grid grid-cols-3 gap-2 pt-4 pb-1 text-center items-start">
-                <div class="flex flex-col items-center">
-                    <span class="text-xs text-slate-400 font-medium">ClinVar DB Ref</span>
-                    <div class="flex items-center gap-1.5 mt-1">
-                        <span id="cv-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-                        <span id="cv-status" class="text-sm font-bold text-emerald-400">VUS</span>
-                    </div>
-                    <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer"
-                       class="mt-1 text-[10px] font-mono text-sky-400 hover:underline">
-                        <span id="clinvar-accession">Search NCBI ↗</span>
-                    </a>
-                </div>
-
-                <div class="flex flex-col items-center border-x border-slate-800/80">
-                    <span class="text-xs text-slate-400 font-medium">Conservation</span>
-                    <span id="conservation-val" class="text-lg font-extrabold font-mono text-white mt-0.5">69.0%</span>
-                </div>
-
-                <div class="flex flex-col items-center">
-                    <span class="text-xs text-slate-400 font-medium">Predictive Score</span>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span id="pred-verdict" class="text-sm font-bold text-emerald-400">Tolerated</span>
-                        <span id="pred-score" class="bg-[#12161f] font-mono text-xs font-extrabold text-white px-2 py-0.5 rounded border border-slate-700">0.180</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- BOTTOM CONTROL BAR -->
-        <div class="bg-[#232936] px-5 py-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex-1">
-                <div class="flex items-center justify-between mb-2">
-                    <label for="pos-slider" class="text-sm font-bold text-white">
-                        SLC6A8 Sequence Position Locator <span class="text-slate-400 font-normal text-xs">(Range: 1 to 635)</span>
-                    </label>
-                </div>
-                <input type="range" id="pos-slider" min="1" max="635" value="1" class="w-full cursor-pointer">
-                <div class="flex items-center gap-2.5 mt-2.5">
-                    <label for="alt-select" class="text-xs text-slate-400 font-medium">Substitution (MUT):</label>
-                    <select id="alt-select" class="bg-[#141820] border border-slate-700 rounded-md px-2.5 py-1 text-xs font-mono font-bold text-white cursor-pointer"></select>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-start sm:items-end gap-2 shrink-0">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-slate-400 mr-1">Fine-tune:</span>
-                    <button id="btn-prev" class="bg-[#2c3444] hover:bg-slate-700 text-white font-mono text-xs font-bold px-2.5 py-1 rounded border border-slate-700 active:scale-95">-1</button>
-                    <button id="btn-next" class="bg-[#2c3444] hover:bg-slate-700 text-white font-mono text-xs font-bold px-2.5 py-1 rounded border border-slate-700 active:scale-95">+1</button>
-                </div>
-                <div class="bg-[#141820] border border-slate-700 px-3 py-1 rounded-md font-mono text-sm font-extrabold text-white">
-                    AA #<span id="aa-num">1</span>
-                </div>
-            </div>
-        </div>
+<body>
+<div class="shell">
+  <div class="main-body">
+    <div class="header-row">
+      <div>
+        <div class="sub-kicker">LEUT-FOLD MODEL VIEW</div>
+        <h1 class="main-title">SLC6A8 Transmembrane Topology</h1>
+      </div>
+      <div class="preset-bar">
+        <span style="font-size:10px; color:#94a3b8; font-weight:700;">HOTSPOTS:</span>
+        <button class="preset-btn" onclick="jumpTo(42,'R')">G42R</button>
+        <button class="preset-btn" onclick="jumpTo(87,'R')">G87R</button>
+        <button class="preset-btn" onclick="jumpTo(390,'L')">P390L</button>
+        <button class="preset-btn" onclick="jumpTo(545,'L')">P545L</button>
+      </div>
     </div>
 
-    <script>
-        const REF_SEQ =
-            "MAKKSAENGIYSVSGDEKKGPLIAPGPDGAPAKGDGPVGLGTPGGRLAVPPRETWTRQMD" +
-            "FIMSCVGFAVGLGNVWRFPYLCYKNGGGVFLIPYVLIALVGGIPIFFLEISLGQFMKAGS" +
-            "INVWNICPLFKGLGYASMVIVFYCNTYYIMVLAWGFYYLVKSFTTTLPWATCGHTWNTPD" +
-            "CVEIFRHEDCANASLANLTCDQLADRRSPVIEFWENKVLRLSGGLEVPGALNWEVTLCLL" +
-            "ACWVLVYFCVWKGVKSTGKIVYFTATFPYVVLVVLLVRGVLLPGALDGIIYYLKPDWSKL" +
-            "GSPQVWIDAGTQIFFSYAIGLGALTALGSYNRFNNNCYKDAIILALINSGTSFFAGFVVF" +
-            "SILGFMAAQEQGVPIAEVAESGPGLAFIAYPKAVTMMPLPTFWSILFFIMLLLLGLDSQF" +
-            "VEVEGQITSLVDLYPSFLRKGYRREIFIAFVCSISYLLGLTMVTEGGMYVFQLFDYYAAS" +
-            "GVCLLWVAFFECFVIAWIYGGDNLYDGIEDMIGYRPGPWMKYSWAVITPVLCVGCFIFSL" +
-            "VKYVPLTYNKTYVYPNWAIGLGWSLALSSMLCVPLVIVIRLCQTEGPFLVRVKYLLTPRE" +
-            "PNRWAVEREGATFPYSRTVMVMANGHVKTDV";
+    <div class="stage">
+      <svg id="leutSvg" viewBox="0 0 800 280" style="width:100%; height:280px; display:block;">
+        <rect x="0" y="58" width="800" height="110" fill="rgba(30, 41, 59, 0.35)"></rect>
+        <line x1="0" y1="58" x2="800" y2="58" stroke="#334155" stroke-width="1" stroke-dasharray="3 3"></line>
+        <line x1="0" y1="168" x2="800" y2="168" stroke="#334155" stroke-width="1" stroke-dasharray="3 3"></line>
+        <text x="12" y="48" fill="#64748b" font-size="10">Extracellular Space</text>
+        <text x="12" y="73" fill="#64748b" font-size="10">Lipid Bilayer</text>
+        <text x="12" y="184" fill="#64748b" font-size="10">Cytoplasmic Matrix</text>
+        <g id="svg-capsules"></g>
+        <g id="svg-residues"></g>
+        <g id="active-marker">
+          <circle r="11" fill="rgba(239, 68, 68, 0.35)"></circle>
+          <circle r="5.5" fill="#ef4444" stroke="#ffffff" stroke-width="2"></circle>
+        </g>
+      </svg>
 
-        const AA_MAP = {
-            A:"Ala", R:"Arg", N:"Asn", D:"Asp", C:"Cys", E:"Glu", Q:"Gln", G:"Gly", H:"His", I:"Ile",
-            L:"Leu", K:"Lys", M:"Met", F:"Phe", P:"Pro", S:"Ser", T:"Thr", W:"Trp", Y:"Tyr", V:"Val"
-        };
-        const HYDROPATHY = {
-            I:4.5, V:4.2, L:3.8, F:2.8, C:2.5, M:1.9, A:1.8, G:-0.4, T:-0.7, S:-0.8,
-            W:-0.9, Y:-1.3, P:-1.6, H:-3.2, E:-3.5, Q:-3.5, D:-3.5, N:-3.5, K:-3.9, R:-4.5
-        };
-        const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
+      <div class="domain-card">
+        <div class="sub-kicker" style="font-size:9px;">ACTIVE STRUCTURAL DOMAIN</div>
+        <div id="domain-title" class="domain-val">N-Terminal Cytoplasmic Tail</div>
+        <div class="wt-row">
+          <span>Wild-Type Res:</span>
+          <span id="wt-badge" class="wt-pill">M1</span>
+        </div>
+      </div>
+    </div>
 
-        const TM_LIST = [
-            { name: "TM1", s: 61, e: 83 },   { name: "TM2", s: 95, e: 117 },
-            { name: "TM3", s: 153, e: 175 }, { name: "TM4", s: 219, e: 241 },
-            { name: "TM5", s: 253, e: 275 }, { name: "TM6", s: 305, e: 327 },
-            { name: "TM7", s: 351, e: 373 }, { name: "TM8", s: 405, e: 427 },
-            { name: "TM9", s: 455, e: 477 }, { name: "TM10", s: 491, e: 513 },
-            { name: "TM11", s: 545, e: 567 },{ name: "TM12", s: 581, e: 603 }
-        ];
+    <div class="metrics">
+      <div class="metric-col">
+        <span class="metric-lbl">ClinVar DB Ref</span>
+        <div style="display:flex; align-items:center; gap:6px; font-weight:700; font-size:14px;">
+          <span id="cv-dot" style="width:8px; height:8px; border-radius:50%; background:#34d399; display:inline-block;"></span>
+          <span id="cv-status" style="color:#34d399;">VUS</span>
+        </div>
+        <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer" style="color:#38bdf8; font-family:monospace; font-size:11px; text-decoration:none;">
+          <span id="clinvar-accession">Search NCBI ↗</span>
+        </a>
+      </div>
 
-        const CLINVAR_DB = {
-            G42R:  { sig: "Pathogenic", vid: "11695", score: 0.942 },
-            G87R:  { sig: "Pathogenic", vid: "11696", score: 0.968 },
-            C144W: { sig: "Pathogenic", vid: "11698", score: 0.915 },
-            G253R: { sig: "Pathogenic", vid: "213898", score: 0.934 },
-            P382L: { sig: "Pathogenic", vid: "11700", score: 0.951 },
-            P390L: { sig: "Pathogenic", vid: "11701", score: 0.979 },
-            G421R: { sig: "Pathogenic", vid: "11702", score: 0.964 },
-            C491W: { sig: "Pathogenic", vid: "11703", score: 0.948 },
-            P544L: { sig: "Pathogenic", vid: "11704", score: 0.961 },
-            P554L: { sig: "Pathogenic", vid: "11705", score: 0.938 },
-            A54V:  { sig: "Benign", vid: "93192", score: 0.064 },
-            V114I: { sig: "Benign", vid: "134812", score: 0.082 }
-        };
-        let pts = new Array();
-        const el = id => document.getElementById(id);
+      <div class="metric-col metric-mid">
+        <span class="metric-lbl">Conservation</span>
+        <span id="conservation-val" style="font-size:18px; font-weight:800; font-family:monospace; color:#fff;">69.0%</span>
+      </div>
 
-        function populateDropdown(wt) {
-            const sel = el('alt-select');
-            const curr = sel.value;
-            sel.innerHTML = '';
-            Object.keys(AA_MAP).forEach(k => {
-                if (k !== wt) {
-                    const opt = document.createElement('option');
-                    opt.value = k;
-                    opt.textContent = k + " (" + Reflect.get(AA_MAP, k) + ")";
-                    if (k === curr) opt.selected = true;
-                    sel.appendChild(opt);
-                }
-            });
+      <div class="metric-col">
+        <span class="metric-lbl">Predictive Score</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="pred-verdict" style="font-size:14px; font-weight:700; color:#34d399;">Tolerated</span>
+          <span id="pred-score" class="score-pill">0.180</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <div class="slider-row">
+      <div class="slider-wrap">
+        <label for="pos-slider" style="font-size:13.5px; font-weight:700; color:#fff;">
+          SLC6A8 Sequence Position Locator <span style="color:#94a3b8; font-weight:400; font-size:12px;">(Range: 1 to 635)</span>
+        </label>
+        <input type="range" id="pos-slider" class="slider" min="1" max="635" value="1">
+      </div>
+
+      <div class="tune-stack">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:12px; color:#94a3b8; margin-right:4px;">Fine-tune:</span>
+          <button id="btn-prev" class="tune-btn">-1</button>
+          <button id="btn-next" class="tune-btn">+1</button>
+        </div>
+        <div class="aa-badge">AA #<span id="aa-num">1</span></div>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div>
+        <span class="field-lbl">Wild-Type Reference Residue</span>
+        <div class="wt-box">
+          <span id="wt-full-label">Met (Methionine)</span>
+          <span id="wt-code-tag" class="wt-tag">WT: M</span>
+        </div>
+      </div>
+
+      <div>
+        <label for="alt-select" class="field-lbl">Target Substitution Mutation Variant</label>
+        <select id="alt-select"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-bar">
+    <span>UniProt P48029 • Canonical Human SLC6A8 (635 AA)</span>
+    <span class="db-pill">active_db: ClinVar</span>
+  </div>
+</div>
+<script>
+  const REF_SEQ =
+    "MAKKSAENGIYSVSGDEKKGPLIAPGPDGAPAKGDGPVGLGTPGGRLAVPPRETWTRQMD" +
+    "FIMSCVGFAVGLGNVWRFPYLCYKNGGGVFLIPYVLIALVGGIPIFFLEISLGQFMKAGS" +
+    "INVWNICPLFKGLGYASMVIVFYCNTYYIMVLAWGFYYLVKSFTTTLPWATCGHTWNTPD" +
+    "CVEIFRHEDCANASLANLTCDQLADRRSPVIEFWENKVLRLSGGLEVPGALNWEVTLCLL" +
+    "ACWVLVYFCVWKGVKSTGKIVYFTATFPYVVLVVLLVRGVLLPGALDGIIYYLKPDWSKL" +
+    "GSPQVWIDAGTQIFFSYAIGLGALTALGSYNRFNNNCYKDAIILALINSGTSFFAGFVVF" +
+    "SILGFMAAQEQGVPIAEVAESGPGLAFIAYPKAVTMMPLPTFWSILFFIMLLLLGLDSQF" +
+    "VEVEGQITSLVDLYPSFLRKGYRREIFIAFVCSISYLLGLTMVTEGGMYVFQLFDYYAAS" +
+    "GVCLLWVAFFECFVIAWIYGGDNLYDGIEDMIGYRPGPWMKYSWAVITPVLCVGCFIFSL" +
+    "VKYVPLTYNKTYVYPNWAIGLGWSLALSSMLCVPLVIVIRLCQTEGPFLVRVKYLLTPRE" +
+    "PNRWAVEREGATFPYSRTVMVMANGHVKTDV";
+
+  const AA_INFO = {
+    A: { short: "Ala", full: "Alanine" },       R: { short: "Arg", full: "Arginine" },
+    N: { short: "Asn", full: "Asparagine" },    D: { short: "Asp", full: "Aspartic Acid" },
+    C: { short: "Cys", full: "Cysteine" },      E: { short: "Glu", full: "Glutamic Acid" },
+    Q: { short: "Gln", full: "Glutamine" },     G: { short: "Gly", full: "Glycine" },
+    H: { short: "His", full: "Histidine" },     I: { short: "Ile", full: "Isoleucine" },
+    L: { short: "Leu", full: "Leucine" },       K: { short: "Lys", full: "Lysine" },
+    M: { short: "Met", full: "Methionine" },    F: { short: "Phe", full: "Phenylalanine" },
+    P: { short: "Pro", full: "Proline" },       S: { short: "Ser", full: "Serine" },
+    T: { short: "Thr", full: "Threonine" },     W: { short: "Trp", full: "Tryptophan" },
+    Y: { short: "Tyr", full: "Tyrosine" },      V: { short: "Val", full: "Valine" }
+  };
+
+  const HYDROPATHY = {
+    I:4.5, V:4.2, L:3.8, F:2.8, C:2.5, M:1.9, A:1.8, G:-0.4, T:-0.7, S:-0.8,
+    W:-0.9, Y:-1.3, P:-1.6, H:-3.2, E:-3.5, Q:-3.5, D:-3.5, N:-3.5, K:-3.9, R:-4.5
+  };
+  const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
+
+  const TM_LIST = [
+    { name: "TM1", s: 61, e: 83 },   { name: "TM2", s: 95, e: 117 },
+    { name: "TM3", s: 153, e: 175 }, { name: "TM4", s: 219, e: 241 },
+    { name: "TM5", s: 253, e: 275 }, { name: "TM6", s: 305, e: 327 },
+    { name: "TM7", s: 351, e: 373 }, { name: "TM8", s: 405, e: 427 },
+    { name: "TM9", s: 455, e: 477 }, { name: "TM10", s: 491, e: 513 },
+    { name: "TM11", s: 545, e: 567 },{ name: "TM12", s: 581, e: 603 }
+  ];
+
+  const CLINVAR_DB = {
+    G42R:  { sig: "Pathogenic", vid: "11695", score: 0.942 },
+    G87R:  { sig: "Pathogenic", vid: "11696", score: 0.968 },
+    C144W: { sig: "Pathogenic", vid: "11698", score: 0.915 },
+    G253R: { sig: "Pathogenic", vid: "213898", score: 0.934 },
+    P382L: { sig: "Pathogenic", vid: "11700", score: 0.951 },
+    P390L: { sig: "Pathogenic", vid: "11701", score: 0.979 },
+    C491W: { sig: "Pathogenic", vid: "11703", score: 0.948 },
+    P545L: { sig: "Pathogenic", vid: "11704", score: 0.961 },
+    A54V:  { sig: "Benign", vid: "93192", score: 0.064 },
+    V114I: { sig: "Benign", vid: "134812", score: 0.082 }
+  };
+  let pts = new Array();
+  const el = id => document.getElementById(id);
+
+  function populateDropdown(wt) {
+    const sel = el('alt-select');
+    const curr = sel.value;
+    sel.innerHTML = '';
+    Object.keys(AA_INFO).forEach(k => {
+      if (k !== wt) {
+        const info = Reflect.get(AA_INFO, k);
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = k + " - " + info.short + " (" + info.full + ")";
+        if (k === curr) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    });
+  }
+
+  function jumpTo(pos, alt) {
+    el('pos-slider').value = pos;
+    populateDropdown(REF_SEQ.charAt(pos - 1));
+    el('alt-select').value = alt;
+    runPipeline();
+  }
+
+  function buildStylizedTopology() {
+    const capLayer = el('svg-capsules');
+    const resLayer = el('svg-residues');
+    pts = new Array();
+
+    let capHtml = '';
+    TM_LIST.forEach((tm, idx) => {
+      const cx = 115 + idx * 50;
+      capHtml += '<text x="' + cx + '" y="42" id="lbl-' + tm.name + '" fill="#94a3b8" font-size="10" font-weight="bold" text-anchor="middle">' + tm.name + '</text>';
+      capHtml += '<rect id="cap-' + tm.name + '" x="' + (cx - 12) + '" y="52" width="24" height="120" rx="11" fill="rgba(30, 41, 59, 0.45)" stroke="#334155" stroke-width="1.2"></rect>';
+    });
+    capLayer.innerHTML = capHtml;
+
+    for (let pos = 1; pos <= 635; pos++) {
+      let x = 400, y = 210, foundIdx = -1, domainLabel = "", shortTag = "";
+
+      TM_LIST.forEach((tm, idx) => {
+        if (pos >= tm.s && pos <= tm.e) {
+          foundIdx = idx;
+          domainLabel = "Transmembrane Helix " + tm.name;
+          shortTag = tm.name;
+          const cx = 115 + idx * 50;
+          const frac = (pos - tm.s) / (tm.e - tm.s);
+          y = (idx % 2 === 0) ? (168 - frac * 110) : (58 + frac * 110);
+          x = cx + Math.sin(frac * Math.PI * 5) * 6.5;
         }
+      });
 
-        function jumpTo(pos, alt) {
-            el('pos-slider').value = pos;
-            populateDropdown(REF_SEQ.charAt(pos - 1));
-            el('alt-select').value = alt;
-            runPipeline();
+      if (foundIdx === -1) {
+        let prevIdx = -1;
+        TM_LIST.forEach((tm, idx) => { if (pos > tm.e) prevIdx = idx; });
+
+        if (prevIdx === -1) {
+          domainLabel = "N-Terminal Cytoplasmic Tail";
+          shortTag = "N-Term";
+          const frac = pos / 61;
+          x = 34 + frac * 81;
+          y = 192 + Math.sin(frac * Math.PI) * 68;
+        } else if (prevIdx === 11) {
+          domainLabel = "C-Terminal Cytoplasmic Tail";
+          shortTag = "C-Term";
+          const frac = (pos - 603) / 32;
+          x = 665 + frac * 70;
+          y = 175 + Math.sin(frac * Math.PI * 0.7) * 28;
+        } else {
+          const prevTm = TM_LIST.at(prevIdx);
+          const nextTm = TM_LIST.at(prevIdx + 1);
+          const frac = (pos - prevTm.e) / (nextTm.s - prevTm.e);
+          const x1 = 115 + prevIdx * 50;
+          const x2 = 115 + (prevIdx + 1) * 50;
+          x = x1 + frac * (x2 - x1);
+
+          const isExtracellular = (prevIdx % 2 === 0);
+          const loopNum = Math.floor(prevIdx / 2) + 1;
+          if (isExtracellular) {
+            domainLabel = "Extracellular Loop EL" + loopNum;
+            shortTag = "EL" + loopNum;
+            const arch = Math.min(20 + (nextTm.s - prevTm.e) * 0.5, 40);
+            y = 52 - Math.sin(frac * Math.PI) * arch;
+          } else {
+            domainLabel = "Intracellular Loop IL" + loopNum;
+            shortTag = "IL" + loopNum;
+            const arch = Math.min(20 + (nextTm.s - prevTm.e) * 0.5, 44);
+            y = 175 + Math.sin(frac * Math.PI) * arch;
+          }
         }
+      }
+      pts.push({ pos: pos, x: x, y: y, inTM: foundIdx !== -1, tmName: foundIdx !== -1 ? shortTag : "", domainLabel: domainLabel });
+    }
 
-        function buildStylizedTopology() {
-            const capLayer = el('svg-capsules');
-            const resLayer = el('svg-residues');
-            pts = new Array();
+    let resHtml = '<polyline fill="none" stroke="#475569" stroke-width="1.6" points="' +
+      pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '"></polyline>';
 
-            // 12 Slender Capsules clustered across left-to-center (leaving bottom-right open for Domain Card)
-            let capHtml = '';
-            TM_LIST.forEach((tm, idx) => {
-                const cx = 115 + idx * 50;
-                capHtml += '<text x="' + cx + '" y="48" id="lbl-' + tm.name + '" fill="#94a3b8" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="middle">' + tm.name + '</text>';
-                capHtml += '<rect id="cap-' + tm.name + '" x="' + (cx - 12) + '" y="58" width="24" height="128" rx="11" fill="rgba(30, 41, 59, 0.45)" stroke="#334155" stroke-width="1.2"></rect>';
-            });
-            capLayer.innerHTML = capHtml;
+    pts.forEach(p => {
+      resHtml += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+        '" r="2.5" fill="transparent" style="cursor:pointer;"></circle>';
+    });
+    resLayer.innerHTML = resHtml;
 
-            for (let pos = 1; pos <= 635; pos++) {
-                let x = 400, y = 220, foundIdx = -1, domainLabel = "", shortTag = "";
-
-                TM_LIST.forEach((tm, idx) => {
-                    if (pos >= tm.s && pos <= tm.e) {
-                        foundIdx = idx;
-                        domainLabel = "Transmembrane Helix " + tm.name;
-                        shortTag = tm.name;
-                        const cx = 115 + idx * 50;
-                        const frac = (pos - tm.s) / (tm.e - tm.s);
-                        y = (idx % 2 === 0) ? (182 - frac * 118) : (64 + frac * 118);
-                        x = cx + Math.sin(frac * Math.PI * 5) * 6.5;
-                    }
-                });
-
-                if (foundIdx === -1) {
-                    let prevIdx = -1;
-                    TM_LIST.forEach((tm, idx) => { if (pos > tm.e) prevIdx = idx; });
-
-                    if (prevIdx === -1) {
-                        domainLabel = "N-Terminal Cytoplasmic Tail";
-                        shortTag = "N-Term";
-                        const frac = pos / 61;
-                        x = 34 + frac * 81;
-                        y = 205 + Math.sin(frac * Math.PI) * 78;
-                    } else if (prevIdx === 11) {
-                        domainLabel = "C-Terminal Cytoplasmic Tail";
-                        shortTag = "C-Term";
-                        const frac = (pos - 603) / 32;
-                        x = 665 + frac * 70;
-                        y = 185 + Math.sin(frac * Math.PI * 0.7) * 32;
-                    } else {
-                        const prevTm = TM_LIST.at(prevIdx);
-                        const nextTm = TM_LIST.at(prevIdx + 1);
-                        const frac = (pos - prevTm.e) / (nextTm.s - prevTm.e);
-                        const x1 = 115 + prevIdx * 50;
-                        const x2 = 115 + (prevIdx + 1) * 50;
-                        x = x1 + frac * (x2 - x1);
-
-                        const isExtracellular = (prevIdx % 2 === 0);
-                        const loopNum = Math.floor(prevIdx / 2) + 1;
-                        if (isExtracellular) {
-                            domainLabel = "Extracellular Loop EL" + loopNum;
-                            shortTag = "EL" + loopNum;
-                            const arch = Math.min(22 + (nextTm.s - prevTm.e) * 0.55, 44);
-                            y = 58 - Math.sin(frac * Math.PI) * arch;
-                        } else {
-                            domainLabel = "Intracellular Loop IL" + loopNum;
-                            shortTag = "IL" + loopNum;
-                            const arch = Math.min(22 + (nextTm.s - prevTm.e) * 0.55, 48);
-                            y = 186 + Math.sin(frac * Math.PI) * arch;
-                        }
-                    }
-                }
-                pts.push({ pos: pos, x: x, y: y, inTM: foundIdx !== -1, tmName: foundIdx !== -1 ? shortTag : "", domainLabel: domainLabel });
-            }
-
-            let resHtml = '<polyline fill="none" stroke="#475569" stroke-width="1.6" points="' +
-                pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '"></polyline>';
-
-            pts.forEach(p => {
-                resHtml += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
-                    '" r="2.2" fill="transparent" style="cursor:pointer;"></circle>';
-            });
-            resLayer.innerHTML = resHtml;
-
-            resLayer.querySelectorAll('circle').forEach(c => {
-                const pPos = parseInt(c.getAttribute('data-pos'), 10);
-                c.addEventListener('click', () => {
-                    el('pos-slider').value = pPos;
-                    runPipeline();
-                });
-            });
-        }
-
-        function runPipeline() {
-            const pos = parseInt(el('pos-slider').value, 10);
-            const wt = REF_SEQ.charAt(pos - 1);
-            populateDropdown(wt);
-            const alt = el('alt-select').value || "A";
-            const variantLabel = wt + pos + alt;
-            const pObj = pts.at(pos - 1);
-
-            el('aa-num').textContent = pos;
-            el('wt-badge').textContent = wt + pos;
-            el('wt-name').textContent = "(" + Reflect.get(AA_MAP, wt) + ")";
-            el('domain-title').textContent = pObj.domainLabel;
-            el('backend-log').textContent = "Backend Log: Variant substitution target mutated to " + alt + " (" + variantLabel + ")";
-
-            TM_LIST.forEach(tm => {
-                const rect = el('cap-' + tm.name);
-                const lbl = el('lbl-' + tm.name);
-                const isActive = (pObj.tmName === tm.name);
-                rect.setAttribute('fill', isActive ? 'rgba(37, 99, 235, 0.45)' : 'rgba(30, 41, 59, 0.45)');
-                rect.setAttribute('stroke', isActive ? '#60a5fa' : '#334155');
-                rect.setAttribute('stroke-width', isActive ? '2' : '1.2');
-                lbl.setAttribute('fill', isActive ? '#60a5fa' : '#94a3b8');
-            });
-
-            el('active-marker').setAttribute('transform', 'translate(' + pObj.x.toFixed(1) + ', ' + pObj.y.toFixed(1) + ')');
-
-            const cv = Reflect.get(CLINVAR_DB, variantLabel);
-            const linkUrl = new URL("https://nih.gov");
-            let score = 0.180, cons = pObj.inTM ? 84.5 : 69.0;
-
-            if (cv) {
-                score = cv.score;
-                cons = 94.2;
-                el('cv-status').textContent = cv.sig;
-                el('cv-status').className = score >= 0.65 ? "text-sm font-bold text-rose-400" : "text-sm font-bold text-emerald-400";
-                el('cv-dot').className = score >= 0.65 ? "w-2 h-2 rounded-full bg-rose-400 inline-block" : "w-2 h-2 rounded-full bg-emerald-400 inline-block";
-                linkUrl.pathname = "/clinvar/variation/" + cv.vid + "/";
-                el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0") + " ↗";
-            } else {
-                const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
-                const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
-                const breaker = pObj.inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
-                let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0);
-                score = Math.min(Math.max(raw, 0.05), 0.96);
-                el('cv-status').textContent = "VUS";
-                el('cv-status').className = "text-sm font-bold text-emerald-400";
-                el('cv-dot').className = "w-2 h-2 rounded-full bg-emerald-400 inline-block";
-                linkUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
-                el('clinvar-accession').textContent = "Search " + variantLabel + " ↗";
-            }
-
-            el('clinvar-link').href = linkUrl.toString();
-            el('conservation-val').textContent = cons.toFixed(1) + "%";
-            el('pred-score').textContent = score.toFixed(3);
-
-            if (score >= 0.65) {
-                el('pred-verdict').textContent = "Deleterious";
-                el('pred-verdict').className = "text-sm font-bold text-rose-400";
-            } else if (score <= 0.35) {
-                el('pred-verdict').textContent = "Tolerated";
-                el('pred-verdict').className = "text-sm font-bold text-emerald-400";
-            } else {
-                el('pred-verdict').textContent = "Moderate";
-                el('pred-verdict').className = "text-sm font-bold text-amber-300";
-            }
-        }
-
-        el('pos-slider').addEventListener('input', runPipeline);
-        el('alt-select').addEventListener('change', runPipeline);
-        el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
-        el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
-
-        buildStylizedTopology();
+    resLayer.querySelectorAll('circle').forEach(c => {
+      const pPos = parseInt(c.getAttribute('data-pos'), 10);
+      c.addEventListener('click', () => {
+        el('pos-slider').value = pPos;
         runPipeline();
-    </script>
+      });
+    });
+  }
+  function runPipeline() {
+    const pos = parseInt(el('pos-slider').value, 10);
+    const wt = REF_SEQ.charAt(pos - 1);
+    const wtInfo = Reflect.get(AA_INFO, wt);
+    populateDropdown(wt);
+    const alt = el('alt-select').value || "R";
+    const variantLabel = wt + pos + alt;
+    const pObj = pts.at(pos - 1);
+
+    el('aa-num').textContent = pos;
+    el('wt-badge').textContent = wt + pos;
+    el('wt-full-label').textContent = wtInfo.short + " (" + wtInfo.full + ")";
+    el('wt-code-tag').textContent = "WT: " + wt;
+    el('domain-title').textContent = pObj.domainLabel;
+
+    TM_LIST.forEach(tm => {
+      const rect = el('cap-' + tm.name);
+      const lbl = el('lbl-' + tm.name);
+      const isActive = (pObj.tmName === tm.name);
+      rect.setAttribute('fill', isActive ? 'rgba(37, 99, 235, 0.45)' : 'rgba(30, 41, 59, 0.45)');
+      rect.setAttribute('stroke', isActive ? '#60a5fa' : '#334155');
+      rect.setAttribute('stroke-width', isActive ? '2' : '1.2');
+      lbl.setAttribute('fill', isActive ? '#60a5fa' : '#94a3b8');
+    });
+
+    el('active-marker').setAttribute('transform', 'translate(' + pObj.x.toFixed(1) + ', ' + pObj.y.toFixed(1) + ')');
+
+    const cv = Reflect.get(CLINVAR_DB, variantLabel);
+    const linkUrl = new URL("https://nih.gov");
+    let score = 0.180, cons = pObj.inTM ? 84.5 : 69.0;
+
+    if (cv) {
+      score = cv.score;
+      cons = 94.2;
+      el('cv-status').textContent = cv.sig;
+      el('cv-status').style.color = score >= 0.65 ? "#fb7185" : "#34d399";
+      el('cv-dot').style.background = score >= 0.65 ? "#fb7185" : "#34d399";
+      linkUrl.pathname = "/clinvar/variation/" + cv.vid + "/";
+      el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0") + " ↗";
+    } else {
+      const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
+      const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
+      const breaker = pObj.inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
+      let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0);
+      score = Math.min(Math.max(raw, 0.05), 0.96);
+      el('cv-status').textContent = "VUS";
+      el('cv-status').style.color = "#34d399";
+      el('cv-dot').style.background = "#34d399";
+      linkUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
+      el('clinvar-accession').textContent = "Search " + variantLabel + " ↗";
+    }
+
+    el('clinvar-link').href = linkUrl.toString();
+    el('conservation-val').textContent = cons.toFixed(1) + "%";
+    el('pred-score').textContent = score.toFixed(3);
+
+    if (score >= 0.65) {
+      el('pred-verdict').textContent = "Deleterious";
+      el('pred-verdict').style.color = "#fb7185";
+    } else if (score <= 0.35) {
+      el('pred-verdict').textContent = "Tolerated";
+      el('pred-verdict').style.color = "#34d399";
+    } else {
+      el('pred-verdict').textContent = "Moderate";
+      el('pred-verdict').style.color = "#fcd34d";
+    }
+  }
+
+  el('pos-slider').addEventListener('input', runPipeline);
+  el('alt-select').addEventListener('change', runPipeline);
+  el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
+  el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
+
+  buildStylizedTopology();
+  runPipeline();
+</script>
 </body>
 </html>
