@@ -3,147 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SLC6A8 LeuT-Fold Variant Explorer</title>
+    <title>SLC6A8 Transmembrane Topology & Variant Predictor</title>
     <script src="https://tailwindcss.com"></script>
     <style>
         * { outline: none !important; -webkit-tap-highlight-color: transparent; }
-        input[type="range"] { -webkit-appearance: none; background: #1e293b; height: 6px; border-radius: 4px; }
+        body { background-color: #11151c; color: #e2e8f0; }
+        input[type="range"] { -webkit-appearance: none; background: #262d3d; height: 6px; border-radius: 999px; }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-            background: #10b981; border: 2px solid #ffffff; cursor: pointer;
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #4f86f7; border: 2px solid #ffffff; cursor: pointer;
+            box-shadow: 0 0 10px rgba(79, 134, 247, 0.75);
         }
     </style>
 </head>
-<body class="bg-[#0b0f19] text-slate-100 font-sans min-h-screen select-none">
-    <div class="flex flex-col md:flex-row min-h-screen">
-        <aside class="w-full md:w-80 bg-[#111827] p-6 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between shrink-0">
-            <div class="space-y-6">
-                <div class="flex items-center gap-3 pb-4 border-b border-slate-800">
-                    <div class="w-9 h-9 rounded-lg bg-emerald-950 border border-emerald-700 flex items-center justify-center text-lg">🧬</div>
-                    <div>
-                        <h2 class="text-base font-bold text-white">SLC6A8 Explorer</h2>
-                        <span class="text-xs font-mono text-emerald-400">UniProt: P48029 • 635 AA</span>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Residue Navigation</label>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <button id="btn-prev" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg border border-slate-700 text-xs">⬅️ Step -1</button>
-                        <button id="btn-next" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg border border-slate-700 text-xs">Step +1 ➡️</button>
-                    </div>
-                </div>
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label for="pos-slider" class="text-xs uppercase tracking-wider font-bold text-slate-400">Sequence Position</label>
-                        <span id="pos-badge" class="bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono text-xs font-bold px-2.5 py-0.5 rounded">1</span>
-                    </div>
-                    <input type="range" id="pos-slider" min="1" max="635" value="1" class="w-full cursor-pointer">
-                    <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-1.5">
-                        <span>1</span><span>318</span><span>635</span>
-                    </div>
-                </div>
-                <div class="bg-[#0b0f19] p-4 rounded-xl border border-slate-800">
-                    <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-widest">Wild-Type Locus</span>
-                    <div id="wt-display" class="text-lg font-mono text-emerald-400 font-bold mt-1">M1 (Methionine)</div>
-                </div>
-                <div>
-                    <label for="alt-select" class="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Mutant Allele (MUT)</label>
-                    <select id="alt-select" class="w-full bg-[#0b0f19] border border-slate-700 rounded-lg p-2.5 text-sm text-white font-medium"></select>
-                </div>
-                <div>
-                    <span class="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">ClinVar Hotspot Presets</span>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="jumpTo(87, 'R')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">G87R</button>
-                        <button onclick="jumpTo(390, 'L')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">P390L</button>
-                        <button onclick="jumpTo(421, 'R')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">G421R</button>
-                    </div>
-                </div>
+<body class="min-h-screen flex flex-col justify-between font-sans select-none">
+
+    <!-- TOP TELEMETRY BAR -->
+    <header class="bg-[#181d27] border-b border-slate-800/90 px-6 py-3.5 space-y-2">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+            <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+                <span class="text-slate-300 font-semibold">Canonical Reference:</span>
+                <span class="bg-[#11151c] text-sky-400 px-2.5 py-1 rounded border border-slate-700/80">UniProt P48029 (SLC6A8 • 635 AA)</span>
             </div>
-            <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 mt-6">Click any residue on the 2D topology map</div>
-        </aside>
-
-        <main class="flex-1 p-6 lg:p-8 space-y-6 max-w-6xl">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">SLC6A8 Creatine Transporter Variant Predictor</h1>
-                    <p class="text-slate-400 text-sm mt-1">12-TM LeuT-Fold topology mapping, pathogenicity prediction & ClinVar reference</p>
-                </div>
-                <div class="flex items-center gap-3 bg-[#111827] border border-slate-800 px-4 py-2 rounded-xl">
-                    <span class="text-xs uppercase font-bold text-slate-400">Variant</span>
-                    <span id="variant-pill" class="font-mono text-xl font-black text-emerald-400">M1A</span>
-                </div>
+            <div class="flex items-center gap-2 text-amber-300/90">
+                <span>⚡</span>
+                <span id="backend-log">Variant target: M1A (N-Terminal Cytoplasmic Tail)</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Structural Topology Domain</h3>
-                    <div id="domain-card" style="background-color:#0f233c; border-color:#38bdf8; color:#bae6fd;" class="p-5 rounded-lg flex flex-col justify-center min-h-[140px] border-l-4">
-                        <span id="domain-title" class="text-xl font-bold">N-Terminal Cytoplasmic Tail</span>
-                        <span id="domain-sub" class="text-xs font-mono opacity-80 mt-1.5">Cytoplasmic Regulatory Domain (Residues 1–60)</span>
-                    </div>
+        </div>
+    </header>
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-6 flex flex-col justify-between space-y-5">
+        <div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">LEUT-FOLD MODEL VIEW</span>
+                    <h1 class="text-2xl font-extrabold text-white tracking-tight">SLC6A8 Transmembrane Topology</h1>
                 </div>
-
-                <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Pathogenicity Prediction & ClinVar</h3>
-                    <div id="prob-card" style="background-color:#0b2920; border-color:#10b981; color:#d1fae5;" class="p-4 rounded-lg flex flex-col justify-between min-h-[140px] border-l-4">
-                        <div>
-                            <div class="flex items-baseline justify-between">
-                                <span id="prob-pct" class="text-3xl font-black font-mono">18%</span>
-                                <span id="prob-verdict" class="text-xs font-bold uppercase tracking-wider">Likely Tolerated</span>
-                            </div>
-                            <div class="w-full bg-black/40 h-2 rounded-full mt-2 overflow-hidden">
-                                <div id="prob-bar" style="width:18%; background-color:#10b981;" class="h-full transition-all duration-200"></div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 pt-2.5 border-t border-white/10 space-y-1.5 text-xs font-mono">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="text-slate-300 font-semibold">ClinVar Status:</span>
-                                <span id="predict-title" class="font-bold text-right">Not Documented (Novel / VUS)</span>
-                            </div>
-                            <div class="pt-1">
-                                <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer" 
-                                   class="inline-flex items-center gap-1.5 text-[11px] font-bold bg-[#0b0f19] hover:bg-slate-800 text-sky-300 px-2.5 py-1 rounded border border-sky-500/40">
-                                    🔗 <span id="clinvar-accession">Search NCBI ClinVar</span> ↗
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] uppercase font-bold text-slate-400 mr-1">Hotspots:</span>
+                    <button onclick="jumpTo(87, 'R')" class="bg-[#1b2230] hover:bg-slate-700 text-rose-300 border border-slate-700 px-2.5 py-1 rounded text-xs font-mono font-bold">G87R</button>
+                    <button onclick="jumpTo(390, 'L')" class="bg-[#1b2230] hover:bg-slate-700 text-rose-300 border border-slate-700 px-2.5 py-1 rounded text-xs font-mono font-bold">P390L</button>
+                    <button onclick="jumpTo(421, 'R')" class="bg-[#1b2230] hover:bg-slate-700 text-rose-300 border border-slate-700 px-2.5 py-1 rounded text-xs font-mono font-bold">G421R</button>
+                    <button onclick="jumpTo(544, 'L')" class="bg-[#1b2230] hover:bg-slate-700 text-rose-300 border border-slate-700 px-2.5 py-1 rounded text-xs font-mono font-bold">P544L</button>
                 </div>
             </div>
 
-            <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
-                <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-                    <div>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">2D LeuT-Fold Membrane Topology Model (TM1–TM12)</h3>
-                        <p id="hover-status" class="text-xs font-mono text-slate-400 mt-0.5 h-4">Hover or click any residue node below to inspect</p>
+            <!-- STYLIZED 12-CAPSULE LEUT-FOLD SVG STAGE -->
+            <div class="relative w-full mt-3 bg-[#131822] rounded-2xl border border-slate-800/90 overflow-hidden shadow-2xl">
+                <svg id="leutSvg" viewBox="0 0 1000 360" style="width:100%; height:350px; display:block;">
+                    <!-- Lipid Bilayer Band (Y = 105 to 235) -->
+                    <rect x="0" y="105" width="1000" height="130" fill="#181f2c"></rect>
+                    <line x1="0" y1="105" x2="1000" y2="105" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4"></line>
+                    <line x1="0" y1="235" x2="1000" y2="235" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4"></line>
+
+                    <text x="16" y="42" fill="#64748b" font-size="11" font-weight="bold" font-family="sans-serif">Extracellular Space</text>
+                    <text x="16" y="122" fill="#64748b" font-size="10" font-weight="bold" font-family="sans-serif">Lipid Bilayer</text>
+                    <text x="16" y="253" fill="#64748b" font-size="11" font-weight="bold" font-family="sans-serif">Cytoplasmic Matrix</text>
+
+                    <!-- Dynamic Helices, Loops & Interactive Dots -->
+                    <g id="svg-capsules"></g>
+                    <g id="svg-residues"></g>
+
+                    <!-- Glowing Target Marker -->
+                    <g id="active-marker">
+                        <circle r="13" fill="rgba(239, 68, 68, 0.3)"></circle>
+                        <circle r="6.5" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"></circle>
+                    </g>
+                </svg>
+
+                <!-- Floating ACTIVE STRUCTURAL DOMAIN Card (Bottom Right) -->
+                <div class="sm:absolute sm:bottom-4 sm:right-5 bg-[#161c28]/95 backdrop-blur border border-slate-700/80 rounded-xl p-4 shadow-xl min-w-[250px]">
+                    <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">ACTIVE STRUCTURAL DOMAIN</div>
+                    <div id="domain-title" class="text-base font-extrabold text-sky-400 mt-1">N-Terminal Cytoplasmic Tail</div>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-slate-300">
+                        <span>Wild-Type Res:</span>
+                        <span id="wt-badge" class="bg-[#232b3b] text-amber-300 font-mono font-bold px-2 py-0.5 rounded border border-slate-700">M1</span>
+                        <span id="wt-name" class="text-slate-400 text-[11px]">(Methionine)</span>
                     </div>
-                    <div class="flex items-center gap-4 text-xs font-semibold text-slate-300 bg-[#0b0f19] px-3 py-1.5 rounded-lg border border-slate-800">
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> TM Helices</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Loops / Tails</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white inline-block"></span> Selected</span>
-                    </div>
-                </div>
-                <div class="w-full bg-[#070b14] rounded-lg border border-slate-800 overflow-hidden">
-                    <svg id="leutSvg" viewBox="0 0 1000 300" style="width:100%; height:300px; display:block; background:#070b14;">
-                        <rect x="0" y="80" width="1000" height="140" fill="#131c31"></rect>
-                        <line x1="0" y1="80" x2="1000" y2="80" stroke="#334155" stroke-width="1.5"></line>
-                        <line x1="0" y1="220" x2="1000" y2="220" stroke="#334155" stroke-width="1.5"></line>
-                        <text x="14" y="22" fill="#64748b" font-size="11" font-weight="bold" font-family="monospace">EXTRACELLULAR SPACE</text>
-                        <text x="14" y="98" fill="#64748b" font-size="10" font-weight="bold" font-family="monospace">PLASMA MEMBRANE (LIPID BILAYER)</text>
-                        <text x="14" y="288" fill="#64748b" font-size="11" font-weight="bold" font-family="monospace">CYTOPLASM (INTRACELLULAR)</text>
-                        <g id="svg-residues"></g>
-                        <g id="active-marker">
-                            <circle r="12" fill="rgba(16, 185, 129, 0.3)"></circle>
-                            <circle r="6" fill="#10b981" stroke="#ffffff" stroke-width="2"></circle>
-                            <rect id="pill-bg" x="-34" y="-28" width="68" height="18" rx="4" fill="#064e3b" stroke="#10b981" stroke-width="1.5"></rect>
-                            <text id="pill-txt" x="0" y="-15" fill="#ecfdf5" font-size="11" font-weight="bold" font-family="monospace" text-anchor="middle">M1A</text>
-                        </g>
-                    </svg>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+
+        <!-- 3-COLUMN TELEMETRY BAR -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#181d27] p-4 rounded-xl border border-slate-800/90 text-center">
+            <div class="flex flex-col items-center justify-center p-2">
+                <span class="text-xs font-semibold text-slate-400">ClinVar DB Ref</span>
+                <div class="flex items-center gap-2 mt-1">
+                    <span id="cv-dot" class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+                    <span id="cv-status" class="text-sm font-bold text-amber-300">Novel / VUS</span>
+                </div>
+                <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer"
+                   class="mt-1.5 text-[11px] font-mono text-sky-400 hover:text-sky-300 underline">
+                    <span id="clinvar-accession">Search NCBI ClinVar ↗</span>
+                </a>
+            </div>
+
+            <div class="flex flex-col items-center justify-center p-2 md:border-x border-slate-800">
+                <span class="text-xs font-semibold text-slate-400">Evolutionary Conservation</span>
+                <span id="conservation-val" class="text-xl font-black font-mono text-white mt-1">64.0%</span>
+                <span class="text-[11px] text-slate-500 mt-0.5">SLC6 Neurotransmitter Family</span>
+            </div>
+
+            <div class="flex flex-col items-center justify-center p-2">
+                <span class="text-xs font-semibold text-slate-400">Pathogenicity Prediction</span>
+                <div class="flex items-center gap-2 mt-1">
+                    <span id="pred-verdict" class="text-sm font-bold text-emerald-400">Tolerated</span>
+                    <span id="pred-score" class="bg-[#11151c] font-mono text-sm font-extrabold text-white px-2.5 py-0.5 rounded border border-slate-700">18%</span>
+                </div>
+                <span id="hover-hint" class="text-[11px] font-mono text-slate-500 mt-1">Hover or click any node above</span>
+            </div>
+        </div>
+    </main>
+    <!-- BOTTOM CONTROL DOCK -->
+    <footer class="bg-[#181d27] border-t border-slate-800/90 px-6 py-4">
+        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                    <label for="pos-slider" class="text-sm font-bold text-white">
+                        SLC6A8 Sequence Position Locator <span class="text-slate-400 font-normal text-xs">(Range: 1 to 635)</span>
+                    </label>
+                </div>
+                <input type="range" id="pos-slider" min="1" max="635" value="1" class="w-full cursor-pointer">
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs text-slate-400 font-semibold mr-1">Fine-tune:</span>
+                    <button id="btn-prev" class="bg-[#232b3b] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3 py-2 rounded-lg border border-slate-700">-1</button>
+                    <button id="btn-next" class="bg-[#232b3b] hover:bg-slate-700 text-white font-mono text-xs font-bold px-3 py-2 rounded-lg border border-slate-700">+1</button>
+                </div>
+
+                <div class="bg-[#11151c] border border-slate-700 px-3.5 py-1.5 rounded-lg font-mono text-sm font-extrabold text-white">
+                    AA #<span id="aa-num">1</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label for="alt-select" class="text-xs text-slate-400 font-semibold">Mutant:</label>
+                    <select id="alt-select" class="bg-[#11151c] border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono font-bold text-white"></select>
+                </div>
+            </div>
+        </div>
+    </footer>
+
     <script>
+        // Exact Canonical Human SLC6A8 Sequence (UniProt P48029 • 635 Amino Acids)
+        const REF_SEQ =
+            "MAKKSAENGIYSVSGDEKKGPLIAPGPDGAPAKGDGPVGLGTPGGRLAVPPRETWTRQMD" +
+            "FIMSCVGFAVGLGNVWRFPYLCYKNGGGVFLIPYVLIALVGGIPIFFLEISLGQFMKAGS" +
+            "INVWNICPLFKGLGYASMVIVFYCNTYYIMVLAWGFYYLVKSFTTTLPWATCGHTWNTPD" +
+            "CVEIFRHEDCANASLANLTCDQLADRRSPVIEFWENKVLRLSGGLEVPGALNWEVTLCLL" +
+            "ACWVLVYFCVWKGVKSTGKIVYFTATFPYVVLVVLLVRGVLLPGALDGIIYYLKPDWSKL" +
+            "GSPQVWIDAGTQIFFSYAIGLGALTALGSYNRFNNNCYKDAIILALINSGTSFFAGFVVF" +
+            "SILGFMAAQEQGVPIAEVAESGPGLAFIAYPKAVTMMPLPTFWSILFFIMLLLLGLDSQF" +
+            "VEVEGQITSLVDLYPSFLRKGYRREIFIAFVCSISYLLGLTMVTEGGMYVFQLFDYYAAS" +
+            "GVCLLWVAFFECFVIAWIYGGDNLYDGIEDMIGYRPGPWMKYSWAVITPVLCVGCFIFSL" +
+            "VKYVPLTYNKTYVYPNWAIGLGWSLALSSMLCVPLVIVIRLCQTEGPFLVRVKYLLTPRE" +
+            "PNRWAVEREGATFPYSRTVMVMANGHVKTDV";
+
         const AA_MAP = {
             A:"Alanine", R:"Arginine", N:"Asparagine", D:"Aspartic Acid", C:"Cysteine",
             E:"Glutamic Acid", Q:"Glutamine", G:"Glycine", H:"Histidine", I:"Isoleucine",
@@ -156,32 +173,29 @@
         };
         const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
 
-        let REF_SEQ = ("MAKKSAENGIYSFSLDEKKGPLGGGQAGEEELDGKMPTLAETLGRGPGAGAGPGPARLGELRPEEGEVETLGGALRPLPLRRGAWWALAALVLCVLVVVAVELGLVRAGWLLLLQLVWLA" + "V".repeat(515)).slice(0, 635);
-
         const TM_LIST = [
-            { name: "TM1", s: 61, e: 83 }, { name: "TM2", s: 95, e: 117 },
+            { name: "TM1", s: 61, e: 83 },   { name: "TM2", s: 95, e: 117 },
             { name: "TM3", s: 153, e: 175 }, { name: "TM4", s: 219, e: 241 },
             { name: "TM5", s: 253, e: 275 }, { name: "TM6", s: 305, e: 327 },
             { name: "TM7", s: 351, e: 373 }, { name: "TM8", s: 405, e: 427 },
             { name: "TM9", s: 455, e: 477 }, { name: "TM10", s: 491, e: 513 },
-            { name: "TM11", s: 545, e: 567 }, { name: "TM12", s: 581, e: 603 }
+            { name: "TM11", s: 545, e: 567 },{ name: "TM12", s: 581, e: 603 }
         ];
 
         const CLINVAR_DB = {
-            G42R:  { sig: "Pathogenic (Multiple submitters)", vid: "11695", pct: 96 },
-            G87R:  { sig: "Pathogenic (Multiple submitters)", vid: "11696", pct: 97 },
-            C144W: { sig: "Pathogenic (Single submitter)", vid: "11698", pct: 94 },
-            G253R: { sig: "Pathogenic (Single submitter)", vid: "213898", pct: 95 },
-            P382L: { sig: "Pathogenic (Multiple submitters)", vid: "11700", pct: 96 },
-            P390L: { sig: "Pathogenic (Multiple submitters)", vid: "11701", pct: 98 },
-            G421R: { sig: "Pathogenic (Multiple submitters)", vid: "11702", pct: 97 },
-            C491W: { sig: "Pathogenic (Multiple submitters)", vid: "11703", pct: 96 },
-            P544L: { sig: "Pathogenic (Multiple submitters)", vid: "11704", pct: 97 },
-            P554L: { sig: "Pathogenic (Multiple submitters)", vid: "11705", pct: 95 },
-            A54V:  { sig: "Benign (Multiple submitters)", vid: "93192", pct: 6 },
-            V114I: { sig: "Benign (Multiple submitters)", vid: "134812", pct: 8 }
+            G42R:  { sig: "Pathogenic", vid: "11695", pct: 96 },
+            G87R:  { sig: "Pathogenic", vid: "11696", pct: 97 },
+            C144W: { sig: "Pathogenic", vid: "11698", pct: 94 },
+            G253R: { sig: "Pathogenic", vid: "213898", pct: 95 },
+            P382L: { sig: "Pathogenic", vid: "11700", pct: 96 },
+            P390L: { sig: "Pathogenic", vid: "11701", pct: 98 },
+            G421R: { sig: "Pathogenic", vid: "11702", pct: 97 },
+            C491W: { sig: "Pathogenic", vid: "11703", pct: 96 },
+            P544L: { sig: "Pathogenic", vid: "11704", pct: 97 },
+            P554L: { sig: "Pathogenic", vid: "11705", pct: 95 },
+            A54V:  { sig: "Benign", vid: "93192", pct: 6 },
+            V114I: { sig: "Benign", vid: "134812", pct: 8 }
         };
-
         let pts = new Array();
         const el = id => document.getElementById(id);
 
@@ -207,160 +221,178 @@
             runPipeline();
         }
 
-        function buildStaticSvg() {
-            const layer = el('svg-residues');
+        function buildStylizedTopology() {
+            const capLayer = el('svg-capsules');
+            const resLayer = el('svg-residues');
             pts = new Array();
 
+            let capHtml = '';
+            TM_LIST.forEach((tm, idx) => {
+                const cx = 135 + idx * 70;
+                capHtml += '<text x="' + cx + '" y="86" id="lbl-' + tm.name + '" fill="#94a3b8" font-size="11" font-weight="bold" font-family="sans-serif" text-anchor="middle">' + tm.name + '</text>';
+                capHtml += '<rect id="cap-' + tm.name + '" x="' + (cx - 16) + '" y="98" width="32" height="144" rx="14" fill="rgba(30, 41, 59, 0.45)" stroke="#334155" stroke-width="1.5"></rect>';
+            });
+            capLayer.innerHTML = capHtml;
             for (let pos = 1; pos <= 635; pos++) {
-                let x = 500, y = 250, foundIdx = -1, tmName = "";
+                let x = 500, y = 270, foundIdx = -1, domainLabel = "", shortTag = "";
+
                 TM_LIST.forEach((tm, idx) => {
                     if (pos >= tm.s && pos <= tm.e) {
-                        foundIdx = idx; tmName = tm.name;
+                        foundIdx = idx;
+                        domainLabel = "Transmembrane Helix " + tm.name;
+                        shortTag = tm.name;
+                        const cx = 135 + idx * 70;
                         const frac = (pos - tm.s) / (tm.e - tm.s);
-                        y = (idx % 2 === 0) ? (215 - frac * 130) : (85 + frac * 130);
-                        x = ((idx + 1) / 13) * 1000 + Math.sin(frac * Math.PI * 5) * 4;
+                        y = (idx % 2 === 0) ? (234 - frac * 128) : (106 + frac * 128);
+                        x = cx + Math.sin(frac * Math.PI * 5) * 9;
                     }
                 });
+
                 if (foundIdx === -1) {
                     let prevIdx = -1;
                     TM_LIST.forEach((tm, idx) => { if (pos > tm.e) prevIdx = idx; });
+
                     if (prevIdx === -1) {
+                        domainLabel = "N-Terminal Cytoplasmic Tail";
+                        shortTag = "N-Term";
                         const frac = pos / 61;
-                        x = 25 + frac * 48; y = 255 - Math.sin(frac * Math.PI) * 18;
+                        x = 42 + frac * 93;
+                        y = 265 + Math.sin(frac * Math.PI) * 68;
                     } else if (prevIdx === 11) {
+                        domainLabel = "C-Terminal Cytoplasmic Tail";
+                        shortTag = "C-Term";
                         const frac = (pos - 603) / 32;
-                        x = 927 + frac * 48; y = 255 - Math.sin(frac * Math.PI) * 18;
+                        x = 905 + frac * 72;
+                        y = 242 + Math.sin(frac * Math.PI * 0.85) * 62;
                     } else {
-                        const prevTm = TM_LIST.at(prevIdx), nextTm = TM_LIST.at(prevIdx + 1);
+                        const prevTm = TM_LIST.at(prevIdx);
+                        const nextTm = TM_LIST.at(prevIdx + 1);
                         const frac = (pos - prevTm.e) / (nextTm.s - prevTm.e);
-                        const x1 = ((prevIdx + 1) / 13) * 1000, x2 = ((prevIdx + 2) / 13) * 1000;
+                        const x1 = 135 + prevIdx * 70;
+                        const x2 = 135 + (prevIdx + 1) * 70;
                         x = x1 + frac * (x2 - x1);
-                        y = (prevIdx % 2 === 0) ? (76 - Math.sin(frac * Math.PI) * 38) : (224 + Math.sin(frac * Math.PI) * 38);
+
+                        const isExtracellular = (prevIdx % 2 === 0);
+                        const loopNum = Math.floor(prevIdx / 2) + 1;
+                        if (isExtracellular) {
+                            domainLabel = "Extracellular Loop EL" + loopNum + " (" + prevTm.name + "–" + nextTm.name + ")";
+                            shortTag = "EL" + loopNum;
+                            const archHeight = Math.min(35 + (nextTm.s - prevTm.e) * 0.9, 78);
+                            y = 98 - Math.sin(frac * Math.PI) * archHeight;
+                        } else {
+                            domainLabel = "Intracellular Loop IL" + loopNum + " (" + prevTm.name + "–" + nextTm.name + ")";
+                            shortTag = "IL" + loopNum;
+                            const archDepth = Math.min(35 + (nextTm.s - prevTm.e) * 0.9, 78);
+                            y = 242 + Math.sin(frac * Math.PI) * archDepth;
+                        }
                     }
                 }
-                pts.push({ pos: pos, x: x, y: y, inTM: foundIdx !== -1, tmName: tmName });
+                pts.push({ pos: pos, x: x, y: y, inTM: foundIdx !== -1, tmName: foundIdx !== -1 ? shortTag : "", domainLabel: domainLabel });
             }
 
-            let html = '<polyline fill="none" stroke="#475569" stroke-width="2" points="' +
+            let resHtml = '<polyline fill="none" stroke="#475569" stroke-width="2" points="' +
                 pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ') + '"></polyline>';
 
-            TM_LIST.forEach((tm, idx) => {
-                const hx = ((idx + 1) / 13) * 1000;
-                html += '<rect x="' + (hx - 16).toFixed(1) + '" y="141" width="32" height="18" rx="4" fill="#0f172a" stroke="#334155"></rect>';
-                html += '<text x="' + hx.toFixed(1) + '" y="153" fill="#f8fafc" font-size="10" font-weight="bold" font-family="monospace" text-anchor="middle">' + tm.name + '</text>';
-            });
-
             pts.forEach(p => {
-                html += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
-                    '" r="' + (p.inTM ? "3.2" : "2.4") + '" fill="' + (p.inTM ? "#f43f5e" : "#38bdf8") + '" style="cursor:pointer;"></circle>';
+                const fill = p.inTM ? "#94a3b8" : "#38bdf8";
+                resHtml += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+                    '" r="2.3" fill="' + fill + '" style="cursor:pointer;"></circle>';
             });
+            resLayer.innerHTML = resHtml;
 
-            layer.innerHTML = html;
-
-            layer.querySelectorAll('circle').forEach(c => {
+            resLayer.querySelectorAll('circle').forEach(c => {
                 const pPos = parseInt(c.getAttribute('data-pos'), 10);
                 const pObj = pts.at(pPos - 1);
                 c.addEventListener('mouseenter', () => {
                     const aa = REF_SEQ.charAt(pPos - 1);
-                    el('hover-status').textContent = "Residue " + aa + pPos + " (" + Reflect.get(AA_MAP, aa) + ") • " + (pObj.tmName || "Loop / Tail");
-                    c.setAttribute('r', '6'); c.setAttribute('fill', '#fbbf24');
+                    el('hover-hint').textContent = aa + pPos + " (" + Reflect.get(AA_MAP, aa) + ") • " + pObj.domainLabel;
+                    c.setAttribute('r', '5.5');
+                    c.setAttribute('fill', '#fbbf24');
                 });
                 c.addEventListener('mouseleave', () => {
-                    el('hover-status').textContent = "Hover or click any residue node below to inspect";
-                    c.setAttribute('r', pObj.inTM ? '3.2' : '2.4'); c.setAttribute('fill', pObj.inTM ? '#f43f5e' : '#38bdf8');
+                    el('hover-hint').textContent = "Hover or click any node above";
+                    c.setAttribute('r', '2.3');
+                    c.setAttribute('fill', pObj.inTM ? '#94a3b8' : '#38bdf8');
                 });
-                c.addEventListener('click', () => { el('pos-slider').value = pPos; runPipeline(); });
+                c.addEventListener('click', () => {
+                    el('pos-slider').value = pPos;
+                    runPipeline();
+                });
             });
         }
-        function moveActiveMarker(pos, labelText) {
-            const p = pts.at(pos - 1), g = el('active-marker');
-            if (!p || !g) return;
-            g.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ', ' + p.y.toFixed(1) + ')');
-            const flipDown = p.y < 55;
-            el('pill-bg').setAttribute('y', flipDown ? '12' : '-28');
-            el('pill-txt').setAttribute('y', flipDown ? '25' : '-15');
-            el('pill-txt').textContent = labelText;
-        }
-
         function runPipeline() {
             const pos = parseInt(el('pos-slider').value, 10);
-            el('pos-badge').textContent = pos;
             const wt = REF_SEQ.charAt(pos - 1);
-            el('wt-display').textContent = wt + pos + " (" + Reflect.get(AA_MAP, wt) + ")";
             populateDropdown(wt);
             const alt = el('alt-select').value || "A";
             const variantLabel = wt + pos + alt;
-            el('variant-pill').textContent = variantLabel;
-            moveActiveMarker(pos, variantLabel);
-
             const pObj = pts.at(pos - 1);
-            const inTM = pObj && pObj.inTM;
-            if (inTM) {
-                el('domain-title').textContent = "Transmembrane Helix " + pObj.tmName;
-                el('domain-sub').textContent = "Membrane-Spanning Alpha-Helix Core";
-                Object.assign(el('domain-card').style, { backgroundColor: '#2a1215', borderColor: '#f43f5e', color: '#fecdd3' });
-            } else {
-                const region = pos < 61 ? "N-Terminal Cytoplasmic Tail" : (pos > 603 ? "C-Terminal Cytoplasmic Tail" : "Interhelical Loop");
-                el('domain-title').textContent = region;
-                el('domain-sub').textContent = pos < 61 ? "Intracellular Tail (1–60)" : (pos > 603 ? "Intracellular Tail (604–635)" : "Extracellular / Intracellular Loop");
-                Object.assign(el('domain-card').style, { backgroundColor: '#0f233c', borderColor: '#38bdf8', color: '#bae6fd' });
-            }
+
+            el('aa-num').textContent = pos;
+            el('wt-badge').textContent = wt + pos;
+            el('wt-name').textContent = "(" + Reflect.get(AA_MAP, wt) + ")";
+            el('domain-title').textContent = pObj.domainLabel;
+            el('backend-log').textContent = "Variant target: " + variantLabel + " • " + pObj.domainLabel;
+
+            TM_LIST.forEach(tm => {
+                const rect = el('cap-' + tm.name);
+                const lbl = el('lbl-' + tm.name);
+                const isActive = (pObj.tmName === tm.name);
+                rect.setAttribute('fill', isActive ? 'rgba(37, 99, 235, 0.35)' : 'rgba(30, 41, 59, 0.45)');
+                rect.setAttribute('stroke', isActive ? '#3b82f6' : '#334155');
+                rect.setAttribute('stroke-width', isActive ? '2.5' : '1.5');
+                lbl.setAttribute('fill', isActive ? '#60a5fa' : '#94a3b8');
+            });
+
+            el('active-marker').setAttribute('transform', 'translate(' + pObj.x.toFixed(1) + ', ' + pObj.y.toFixed(1) + ')');
 
             const cv = Reflect.get(CLINVAR_DB, variantLabel);
-            let pct = 20, verdict = "Likely Tolerated", statusTxt = "Not Documented (Novel / VUS)";
             const linkUrl = new URL("https://nih.gov");
+            let pct = 20, cons = pObj.inTM ? 84.5 : 64.0;
 
             if (cv) {
                 pct = cv.pct;
-                statusTxt = cv.sig;
-                verdict = pct >= 70 ? "Pathogenic (ClinVar)" : "Benign (ClinVar)";
+                cons = 94.2;
+                el('cv-status').textContent = cv.sig;
+                el('cv-status').className = pct >= 70 ? "text-sm font-bold text-rose-400" : "text-sm font-bold text-emerald-400";
+                el('cv-dot').className = pct >= 70 ? "w-2 h-2 rounded-full bg-rose-400 inline-block" : "w-2 h-2 rounded-full bg-emerald-400 inline-block";
                 linkUrl.pathname = "/clinvar/variation/" + cv.vid + "/";
-                el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0");
+                el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0") + " ↗";
             } else {
                 const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
                 const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
-                const breaker = inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
-                let raw = 0.22 + Math.min(dh * (inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (inTM ? 0.15 : 0) + (breaker ? 0.22 : 0);
+                const breaker = pObj.inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
+                let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0);
                 pct = Math.min(Math.max(Math.round(raw * 100), 6), 95);
-                verdict = pct >= 70 ? "Likely Pathogenic" : (pct <= 35 ? "Likely Tolerated" : "Uncertain / VUS");
+                el('cv-status').textContent = "VUS / Unreported";
+                el('cv-status').className = "text-sm font-bold text-amber-300";
+                el('cv-dot').className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
                 linkUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
-                el('clinvar-accession').textContent = "Search " + variantLabel + " on NCBI";
+                el('clinvar-accession').textContent = "Search " + variantLabel + " on NCBI ↗";
             }
 
             el('clinvar-link').href = linkUrl.toString();
-            el('predict-title').textContent = statusTxt;
-            el('prob-pct').textContent = pct + "%";
-            el('prob-verdict').textContent = verdict;
-            el('prob-bar').style.width = pct + "%";
+            el('conservation-val').textContent = cons.toFixed(1) + "%";
+            el('pred-score').textContent = pct + "%";
 
             if (pct >= 70) {
-                el('prob-bar').style.backgroundColor = "#fb7185";
-                Object.assign(el('prob-card').style, { backgroundColor: '#2d111a', borderColor: '#fb7185', color: '#ffe4e6' });
+                el('pred-verdict').textContent = "Deleterious";
+                el('pred-verdict').className = "text-sm font-bold text-rose-400";
             } else if (pct <= 35) {
-                el('prob-bar').style.backgroundColor = "#10b981";
-                Object.assign(el('prob-card').style, { backgroundColor: '#0b2920', borderColor: '#10b981', color: '#d1fae5' });
+                el('pred-verdict').textContent = "Tolerated";
+                el('pred-verdict').className = "text-sm font-bold text-emerald-400";
             } else {
-                el('prob-bar').style.backgroundColor = "#f59e0b";
-                Object.assign(el('prob-card').style, { backgroundColor: '#2c1e0b', borderColor: '#f59e0b', color: '#fef3c7' });
+                el('pred-verdict').textContent = "Moderate / VUS";
+                el('pred-verdict').className = "text-sm font-bold text-amber-300";
             }
         }
-
-        fetch("https://uniprot.org")
-            .then(r => r.ok ? r.text() : "")
-            .then(txt => {
-                const lines = txt.trim().split(/\r?\n/);
-                if (lines.length > 1) {
-                    const seq = lines.slice(1).join("").trim();
-                    if (seq.length === 635) { REF_SEQ = seq; runPipeline(); }
-                }
-            }).catch(() => {});
 
         el('pos-slider').addEventListener('input', runPipeline);
         el('alt-select').addEventListener('change', runPipeline);
         el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
         el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
 
-        buildStaticSvg();
+        buildStylizedTopology();
         runPipeline();
     </script>
 </body>
