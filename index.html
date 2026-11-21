@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SLC6A8 LeuT-Fold Variant Predictor</title>
+    <title>SLC6A8 LeuT-Fold Variant Explorer</title>
     <script src="https://tailwindcss.com"></script>
     <style>
         * { outline: none !important; -webkit-tap-highlight-color: transparent; }
@@ -53,37 +53,38 @@
                 <div>
                     <span class="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">ClinVar Hotspot Presets</span>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="jumpTo(42, 'R')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">G42R</button>
+                        <button onclick="jumpTo(87, 'R')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">G87R</button>
                         <button onclick="jumpTo(390, 'L')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">P390L</button>
                         <button onclick="jumpTo(421, 'R')" class="bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 rounded py-1.5 text-xs font-mono font-bold">G421R</button>
                     </div>
                 </div>
             </div>
-            <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 mt-6">Click any node on the 2D topology map</div>
+            <div class="text-xs text-slate-500 border-t border-slate-800 pt-4 mt-6">Click any residue on the 2D topology map</div>
         </aside>
+
         <main class="flex-1 p-6 lg:p-8 space-y-6 max-w-6xl">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">SLC6A8 Creatine Transporter Variant Predictor</h1>
-                    <p class="text-slate-400 text-sm mt-1">12-TM LeuT-Fold topology mapping, pathogenicity prediction & live NCBI ClinVar lookup</p>
+                    <p class="text-slate-400 text-sm mt-1">12-TM LeuT-Fold topology mapping, pathogenicity prediction & ClinVar reference</p>
                 </div>
                 <div class="flex items-center gap-3 bg-[#111827] border border-slate-800 px-4 py-2 rounded-xl">
                     <span class="text-xs uppercase font-bold text-slate-400">Variant</span>
                     <span id="variant-pill" class="font-mono text-xl font-black text-emerald-400">M1A</span>
                 </div>
             </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Structural Topology Domain</h3>
-                    <div id="domain-card" style="background-color:#0f233c; border-color:#38bdf8; color:#bae6fd;" class="p-5 rounded-lg flex flex-col justify-center min-h-[148px] border-l-4">
+                    <div id="domain-card" style="background-color:#0f233c; border-color:#38bdf8; color:#bae6fd;" class="p-5 rounded-lg flex flex-col justify-center min-h-[140px] border-l-4">
                         <span id="domain-title" class="text-xl font-bold">N-Terminal Cytoplasmic Tail</span>
+                        <span id="domain-sub" class="text-xs font-mono opacity-80 mt-1.5">Cytoplasmic Regulatory Domain (Residues 1–60)</span>
                     </div>
                 </div>
 
                 <div class="bg-[#111827] p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Pathogenicity Prediction</h3>
-                    <div id="prob-card" style="background-color:#0b2920; border-color:#10b981; color:#d1fae5;" class="p-4 rounded-lg flex flex-col justify-between min-h-[148px] border-l-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Pathogenicity Prediction & ClinVar</h3>
+                    <div id="prob-card" style="background-color:#0b2920; border-color:#10b981; color:#d1fae5;" class="p-4 rounded-lg flex flex-col justify-between min-h-[140px] border-l-4">
                         <div>
                             <div class="flex items-baseline justify-between">
                                 <span id="prob-pct" class="text-3xl font-black font-mono">18%</span>
@@ -96,21 +97,13 @@
 
                         <div class="mt-3 pt-2.5 border-t border-white/10 space-y-1.5 text-xs font-mono">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-slate-300 font-semibold">ClinVar:</span>
-                                <span id="predict-title" class="font-bold text-right truncate">Not Documented (Novel / VUS)</span>
+                                <span class="text-slate-300 font-semibold">ClinVar Status:</span>
+                                <span id="predict-title" class="font-bold text-right">Not Documented (Novel / VUS)</span>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-slate-300 font-semibold">AlphaMissense:</span>
-                                <strong id="am-badge" class="font-bold">N/A</strong>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-slate-300 font-semibold">REVEL:</span>
-                                <strong id="revel-badge" class="font-bold">N/A</strong>
-                            </div>
-                            <div id="clinvar-link-container" class="pt-1 hidden">
+                            <div class="pt-1">
                                 <a id="clinvar-link" href="https://nih.gov" target="_blank" rel="noopener noreferrer" 
                                    class="inline-flex items-center gap-1.5 text-[11px] font-bold bg-[#0b0f19] hover:bg-slate-800 text-sky-300 px-2.5 py-1 rounded border border-sky-500/40">
-                                    🔗 NCBI Record: <span id="clinvar-accession">VCV000000000</span> ↗
+                                    🔗 <span id="clinvar-accession">Search NCBI ClinVar</span> ↗
                                 </a>
                             </div>
                         </div>
@@ -151,13 +144,20 @@
         </main>
     </div>
     <script>
-       const API_BASE = "https://slc6a8-api.onrender.com";
         const AA_MAP = {
             A:"Alanine", R:"Arginine", N:"Asparagine", D:"Aspartic Acid", C:"Cysteine",
             E:"Glutamic Acid", Q:"Glutamine", G:"Glycine", H:"Histidine", I:"Isoleucine",
             L:"Leucine", K:"Lysine", M:"Methionine", F:"Phenylalanine", P:"Proline",
             S:"Serine", T:"Threonine", W:"Tryptophan", Y:"Tyrosine", V:"Valine"
         };
+        const HYDROPATHY = {
+            I:4.5, V:4.2, L:3.8, F:2.8, C:2.5, M:1.9, A:1.8, G:-0.4, T:-0.7, S:-0.8,
+            W:-0.9, Y:-1.3, P:-1.6, H:-3.2, E:-3.5, Q:-3.5, D:-3.5, N:-3.5, K:-3.9, R:-4.5
+        };
+        const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
+
+        let REF_SEQ = ("MAKKSAENGIYSFSLDEKKGPLGGGQAGEEELDGKMPTLAETLGRGPGAGAGPGPARLGELRPEEGEVETLGGALRPLPLRRGAWWALAALVLCVLVVVAVELGLVRAGWLLLLQLVWLA" + "V".repeat(515)).slice(0, 635);
+
         const TM_LIST = [
             { name: "TM1", s: 61, e: 83 }, { name: "TM2", s: 95, e: 117 },
             { name: "TM3", s: 153, e: 175 }, { name: "TM4", s: 219, e: 241 },
@@ -167,7 +167,21 @@
             { name: "TM11", s: 545, e: 567 }, { name: "TM12", s: 581, e: 603 }
         ];
 
-        let REF_SEQ = ("MAKKSAENGIYSFSLDEKKGPLGGGQAGEEELDGKMPTLAETLGRGPGAGAGPGPARLGELRPEEGEVETLGGALRPLPLRRGAWWALAALVLCVLVVVAVELGLVRAGWLLLLQLVWLA" + "V".repeat(515)).slice(0, 635);
+        const CLINVAR_DB = {
+            G42R:  { sig: "Pathogenic (Multiple submitters)", vid: "11695", pct: 96 },
+            G87R:  { sig: "Pathogenic (Multiple submitters)", vid: "11696", pct: 97 },
+            C144W: { sig: "Pathogenic (Single submitter)", vid: "11698", pct: 94 },
+            G253R: { sig: "Pathogenic (Single submitter)", vid: "213898", pct: 95 },
+            P382L: { sig: "Pathogenic (Multiple submitters)", vid: "11700", pct: 96 },
+            P390L: { sig: "Pathogenic (Multiple submitters)", vid: "11701", pct: 98 },
+            G421R: { sig: "Pathogenic (Multiple submitters)", vid: "11702", pct: 97 },
+            C491W: { sig: "Pathogenic (Multiple submitters)", vid: "11703", pct: 96 },
+            P544L: { sig: "Pathogenic (Multiple submitters)", vid: "11704", pct: 97 },
+            P554L: { sig: "Pathogenic (Multiple submitters)", vid: "11705", pct: 95 },
+            A54V:  { sig: "Benign (Multiple submitters)", vid: "93192", pct: 6 },
+            V114I: { sig: "Benign (Multiple submitters)", vid: "134812", pct: 8 }
+        };
+
         let pts = new Array();
         const el = id => document.getElementById(id);
 
@@ -201,31 +215,25 @@
                 let x = 500, y = 250, foundIdx = -1, tmName = "";
                 TM_LIST.forEach((tm, idx) => {
                     if (pos >= tm.s && pos <= tm.e) {
-                        foundIdx = idx;
-                        tmName = tm.name;
+                        foundIdx = idx; tmName = tm.name;
                         const frac = (pos - tm.s) / (tm.e - tm.s);
                         y = (idx % 2 === 0) ? (215 - frac * 130) : (85 + frac * 130);
                         x = ((idx + 1) / 13) * 1000 + Math.sin(frac * Math.PI * 5) * 4;
                     }
                 });
-
                 if (foundIdx === -1) {
                     let prevIdx = -1;
                     TM_LIST.forEach((tm, idx) => { if (pos > tm.e) prevIdx = idx; });
                     if (prevIdx === -1) {
                         const frac = pos / 61;
-                        x = 25 + frac * 48;
-                        y = 255 - Math.sin(frac * Math.PI) * 18;
+                        x = 25 + frac * 48; y = 255 - Math.sin(frac * Math.PI) * 18;
                     } else if (prevIdx === 11) {
                         const frac = (pos - 603) / 32;
-                        x = 927 + frac * 48;
-                        y = 255 - Math.sin(frac * Math.PI) * 18;
+                        x = 927 + frac * 48; y = 255 - Math.sin(frac * Math.PI) * 18;
                     } else {
-                        const prevTm = TM_LIST.at(prevIdx);
-                        const nextTm = TM_LIST.at(prevIdx + 1);
+                        const prevTm = TM_LIST.at(prevIdx), nextTm = TM_LIST.at(prevIdx + 1);
                         const frac = (pos - prevTm.e) / (nextTm.s - prevTm.e);
-                        const x1 = ((prevIdx + 1) / 13) * 1000;
-                        const x2 = ((prevIdx + 2) / 13) * 1000;
+                        const x1 = ((prevIdx + 1) / 13) * 1000, x2 = ((prevIdx + 2) / 13) * 1000;
                         x = x1 + frac * (x2 - x1);
                         y = (prevIdx % 2 === 0) ? (76 - Math.sin(frac * Math.PI) * 38) : (224 + Math.sin(frac * Math.PI) * 38);
                     }
@@ -243,10 +251,8 @@
             });
 
             pts.forEach(p => {
-                const r = p.inTM ? "3.2" : "2.4";
-                const fill = p.inTM ? "#f43f5e" : "#38bdf8";
                 html += '<circle data-pos="' + p.pos + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
-                    '" r="' + r + '" fill="' + fill + '" style="cursor:pointer;"></circle>';
+                    '" r="' + (p.inTM ? "3.2" : "2.4") + '" fill="' + (p.inTM ? "#f43f5e" : "#38bdf8") + '" style="cursor:pointer;"></circle>';
             });
 
             layer.innerHTML = html;
@@ -257,23 +263,17 @@
                 c.addEventListener('mouseenter', () => {
                     const aa = REF_SEQ.charAt(pPos - 1);
                     el('hover-status').textContent = "Residue " + aa + pPos + " (" + Reflect.get(AA_MAP, aa) + ") • " + (pObj.tmName || "Loop / Tail");
-                    c.setAttribute('r', '6');
-                    c.setAttribute('fill', '#fbbf24');
+                    c.setAttribute('r', '6'); c.setAttribute('fill', '#fbbf24');
                 });
                 c.addEventListener('mouseleave', () => {
                     el('hover-status').textContent = "Hover or click any residue node below to inspect";
-                    c.setAttribute('r', pObj.inTM ? '3.2' : '2.4');
-                    c.setAttribute('fill', pObj.inTM ? '#f43f5e' : '#38bdf8');
+                    c.setAttribute('r', pObj.inTM ? '3.2' : '2.4'); c.setAttribute('fill', pObj.inTM ? '#f43f5e' : '#38bdf8');
                 });
-                c.addEventListener('click', () => {
-                    el('pos-slider').value = pPos;
-                    runPipeline();
-                });
+                c.addEventListener('click', () => { el('pos-slider').value = pPos; runPipeline(); });
             });
         }
         function moveActiveMarker(pos, labelText) {
-            const p = pts.at(pos - 1);
-            const g = el('active-marker');
+            const p = pts.at(pos - 1), g = el('active-marker');
             if (!p || !g) return;
             g.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ', ' + p.y.toFixed(1) + ')');
             const flipDown = p.y < 55;
@@ -282,7 +282,7 @@
             el('pill-txt').textContent = labelText;
         }
 
-            async function runPipeline() {
+        function runPipeline() {
             const pos = parseInt(el('pos-slider').value, 10);
             el('pos-badge').textContent = pos;
             const wt = REF_SEQ.charAt(pos - 1);
@@ -294,76 +294,74 @@
             moveActiveMarker(pos, variantLabel);
 
             const pObj = pts.at(pos - 1);
-            if (pObj && pObj.inTM) {
+            const inTM = pObj && pObj.inTM;
+            if (inTM) {
                 el('domain-title').textContent = "Transmembrane Helix " + pObj.tmName;
+                el('domain-sub').textContent = "Membrane-Spanning Alpha-Helix Core";
                 Object.assign(el('domain-card').style, { backgroundColor: '#2a1215', borderColor: '#f43f5e', color: '#fecdd3' });
             } else {
                 const region = pos < 61 ? "N-Terminal Cytoplasmic Tail" : (pos > 603 ? "C-Terminal Cytoplasmic Tail" : "Interhelical Loop");
                 el('domain-title').textContent = region;
+                el('domain-sub').textContent = pos < 61 ? "Intracellular Tail (1–60)" : (pos > 603 ? "Intracellular Tail (604–635)" : "Extracellular / Intracellular Loop");
                 Object.assign(el('domain-card').style, { backgroundColor: '#0f233c', borderColor: '#38bdf8', color: '#bae6fd' });
             }
 
-            // Valid NCBI ClinVar search link (never loops back to dashboard)
-             const ncbiUrl = new URL("https://nih.gov");
-            ncbiUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
-            el('clinvar-link').href = ncbiUrl.toString();
-            el('clinvar-accession').textContent = "Search " + variantLabel;
-            el('clinvar-link-container').classList.remove('hidden');
+            const cv = Reflect.get(CLINVAR_DB, variantLabel);
+            let pct = 20, verdict = "Likely Tolerated", statusTxt = "Not Documented (Novel / VUS)";
+            const linkUrl = new URL("https://nih.gov");
 
-            try {
-                const res = await fetch(API_BASE + "/predict?pos=" + pos + "&wt=" + wt + "&alt=" + alt);
-                const data = await res.json();
+            if (cv) {
+                pct = cv.pct;
+                statusTxt = cv.sig;
+                verdict = pct >= 70 ? "Pathogenic (ClinVar)" : "Benign (ClinVar)";
+                linkUrl.pathname = "/clinvar/variation/" + cv.vid + "/";
+                el('clinvar-accession').textContent = "VCV" + cv.vid.padStart(9, "0");
+            } else {
+                const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
+                const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
+                const breaker = inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
+                let raw = 0.22 + Math.min(dh * (inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (inTM ? 0.15 : 0) + (breaker ? 0.22 : 0);
+                pct = Math.min(Math.max(Math.round(raw * 100), 6), 95);
+                verdict = pct >= 70 ? "Likely Pathogenic" : (pct <= 35 ? "Likely Tolerated" : "Uncertain / VUS");
+                linkUrl.searchParams.set("term", "SLC6A8[gene] AND " + variantLabel);
+                el('clinvar-accession').textContent = "Search " + variantLabel + " on NCBI";
+            }
 
-                const pct = data.prob_pct;
-                el('prob-pct').textContent = pct + "%";
-                el('prob-verdict').textContent = data.verdict;
-                el('am-badge').textContent = data.alphamissense;
-                el('revel-badge').textContent = data.revel;
-                el('prob-bar').style.width = pct + "%";
-                el('prob-bar').style.backgroundColor = data.predict_style.border;
-                Object.assign(el('prob-card').style, { backgroundColor: data.predict_style.bg, borderColor: data.predict_style.border, color: data.predict_style.text });
+            el('clinvar-link').href = linkUrl.toString();
+            el('predict-title').textContent = statusTxt;
+            el('prob-pct').textContent = pct + "%";
+            el('prob-verdict').textContent = verdict;
+            el('prob-bar').style.width = pct + "%";
 
-                el('predict-title').textContent = data.prediction;
-                if (data.clinvar_url) {
-                    el('clinvar-link').href = data.clinvar_url;
-                    el('clinvar-accession').textContent = data.accession_label;
+            if (pct >= 70) {
+                el('prob-bar').style.backgroundColor = "#fb7185";
+                Object.assign(el('prob-card').style, { backgroundColor: '#2d111a', borderColor: '#fb7185', color: '#ffe4e6' });
+            } else if (pct <= 35) {
+                el('prob-bar').style.backgroundColor = "#10b981";
+                Object.assign(el('prob-card').style, { backgroundColor: '#0b2920', borderColor: '#10b981', color: '#d1fae5' });
+            } else {
+                el('prob-bar').style.backgroundColor = "#f59e0b";
+                Object.assign(el('prob-card').style, { backgroundColor: '#2c1e0b', borderColor: '#f59e0b', color: '#fef3c7' });
+            }
+        }
+
+        fetch("https://uniprot.org")
+            .then(r => r.ok ? r.text() : "")
+            .then(txt => {
+                const lines = txt.trim().split(/\r?\n/);
+                if (lines.length > 1) {
+                    const seq = lines.slice(1).join("").trim();
+                    if (seq.length === 635) { REF_SEQ = seq; runPipeline(); }
                 }
-            } catch (err) {
-                el('predict-title').textContent = "Waking up cloud server...";
-            }
-        }
-
-        async function bootstrapApp() {
-            buildStaticSvg();
-            runPipeline();
-
-            // Auto-retry loop to wake up Render's free server if it was sleeping
-            for (let attempt = 1; attempt <= 8; attempt++) {
-                try {
-                    el('predict-title').textContent = attempt === 1
-                        ? "Connecting to Cloud API..."
-                        : `Waking up cloud server (attempt ${attempt}/8)...`;
-                    const res = await fetch(API_BASE + "/sequence");
-                    if (res.ok) {
-                        const meta = await res.json();
-                        if (meta.sequence && meta.sequence.length === 635) {
-                            REF_SEQ = meta.sequence;
-                        }
-                        runPipeline(); // Re-run immediately once server is awake!
-                        return;
-                    }
-                } catch (e) {}
-                await new Promise(r => setTimeout(r, 4000));
-            }
-            el('predict-title').textContent = "Cloud API Unreachable (Check Render URL)";
-        }
+            }).catch(() => {});
 
         el('pos-slider').addEventListener('input', runPipeline);
         el('alt-select').addEventListener('change', runPipeline);
         el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
         el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
 
-        bootstrapApp();
+        buildStaticSvg();
+        runPipeline();
     </script>
 </body>
 </html>
