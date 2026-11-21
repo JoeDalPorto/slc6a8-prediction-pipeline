@@ -123,7 +123,7 @@
       </div>
     </div>
 
-    <div class="metrics">
+        <div class="metrics">
       <div class="metric-col">
         <span class="metric-lbl">ClinVar DB Ref</span>
         <div style="display:flex; align-items:center; gap:6px; font-weight:700; font-size:14px;">
@@ -134,6 +134,26 @@
           <span id="clinvar-accession">Search NCBI ↗</span>
         </a>
       </div>
+
+      <div class="metric-col metric-mid">
+        <span class="metric-lbl">Conservation &amp; Fold Stability</span>
+        <div style="display:flex; align-items:baseline; gap:8px;">
+          <span id="conservation-val" style="font-size:17px; font-weight:800; font-family:monospace; color:#fff;">69.0%</span>
+          <span id="ddg-pill" style="background:#131720; border:1px solid #334155; padding:1px 7px; border-radius:4px; font-family:monospace; font-size:11px; font-weight:700; color:#38bdf8;">ΔΔG +0.3 kcal/mol</span>
+        </div>
+        <span id="ddg-label" style="font-size:10.5px; color:#94a3b8; font-family:monospace;">Fold-Neutral</span>
+      </div>
+
+      <div class="metric-col">
+        <span class="metric-lbl">Predictive Score</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="pred-verdict" style="font-size:14px; font-weight:700; color:#34d399;">Tolerated</span>
+          <span id="pred-score" class="score-pill">0.180</span>
+        </div>
+        <span id="am-source-tag" style="font-size:10.5px; color:#94a3b8; font-family:monospace;">Biophysical Model</span>
+      </div>
+    </div>
+
 
       <div class="metric-col metric-mid">
         <span class="metric-lbl">Conservation</span>
@@ -222,6 +242,53 @@
     W:-0.9, Y:-1.3, P:-1.6, H:-3.2, E:-3.5, Q:-3.5, D:-3.5, N:-3.5, K:-3.9, R:-4.5
   };
   const CHARGE = { R:1.0, K:1.0, H:0.1, D:-1.0, E:-1.0 };
+  const VOLUME = {
+    G:60, A:88, S:89, C:108, D:111, P:112, N:114, T:116, E:138, V:140,
+    Q:143, H:153, M:162, I:166, L:166, K:168, R:173, F:189, Y:193, W:227
+  };
+
+  function getResidueConservation(pos, wt, pObj) {
+    const inCorePocket =
+      (pos >= 68 && pos <= 78) || (pos >= 158 && pos <= 165) ||
+      (pos >= 314 && pos <= 325) || (pos >= 355 && pos <= 359) ||
+      (pos >= 411 && pos <= 418);
+    if (inCorePocket) {
+      return Math.min(96.0 + ((pos * 7) % 10) * 0.35, 99.6);
+    }
+    let base = 58.0;
+    if (pos < 56 || pos > 606) base = 34.0;
+    else if (pObj.inTM) base = ["TM1", "TM2", "TM3", "TM6", "TM7", "TM8"].includes(pObj.tmName) ? 84.0 : 75.0;
+    else if (pos >= 170 && pos <= 195) base = 74.0;
+    else if (pos >= 378 && pos <= 402) base = 76.0;
+
+    if (wt === "G" || wt === "P") base += 7.5;
+    else if (wt === "C" && pos >= 170 && pos <= 195) base += 16.0;
+    else if (wt === "W" || wt === "Y" || wt === "F") base += 4.5;
+    else if (wt === "R" || wt === "D" || wt === "E") base += 3.0;
+
+    const jitter = (((pos * 13 + wt.charCodeAt(0)) % 11) - 5) * 1.1;
+    return Math.min(Math.max(base + jitter, 22.0), 99.4);
+  }
+
+  function computeFoldingDeltaG(pos, wt, alt, pObj) {
+    const dv = Math.abs((Reflect.get(VOLUME, alt) || 130) - (Reflect.get(VOLUME, wt) || 130));
+    const dh = (Reflect.get(HYDROPATHY, wt) || 0) - (Reflect.get(HYDROPATHY, alt) || 0);
+    const qAlt = Math.abs(Reflect.get(CHARGE, alt) || 0);
+    const qWt = Math.abs(Reflect.get(CHARGE, wt) || 0);
+
+    let ddg = 0.15 + (dv / 95.0);
+    if (pObj.inTM) {
+      ddg += 0.45;
+      if (qAlt > 0 && qWt === 0) ddg += 1.65; // Burying an unpaired charge inside lipid bilayer
+      if (dh > 2.5) ddg += 0.75;               // Replacing hydrophobic core residue with polar side chain
+      if (alt === "P" || wt === "P" || wt === "G") ddg += 1.15; // Helix kink/packing disruption
+    } else if (wt === "C" && pos >= 170 && pos <= 195) {
+      ddg += 1.80; // EL2 structural disulfide bond loss
+    } else if (wt === "P" || alt === "P") {
+      ddg += 0.75; // Loop turn rigidity shift
+    }
+    return Math.min(Math.max(ddg, -0.2), 4.8);
+  }
 
   const TM_LIST = [
     { name: "TM1", s: 61, e: 83 },   { name: "TM2", s: 95, e: 117 },
@@ -439,30 +506,79 @@
     const hgvs3 = "p." + wtInfo.short + pos + Reflect.get(AA_INFO, alt).short;
     const baseClinVar = "https:" + "//www.ncbi.nlm.nih.gov/clinvar/";
     const searchUrl = baseClinVar + "?term=SLC6A8%5Bgene%5D+AND+" + encodeURIComponent(hgvs3);
-
-    let score = 0.180, cons = pObj.inTM ? 84.5 : 69.0;
+    const cons = getResidueConservation(pos, wt, pObj);
+    const ddg = computeFoldingDeltaG(pos, wt, alt, pObj);
+    let score = 0.180;
     el('clinvar-link').href = searchUrl;
+
+    // Update Conservation & Folding Stability (ddG) Readouts
+    el('conservation-val').textContent = cons.toFixed(1) + "%";
+    el('ddg-pill').textContent = "ΔΔG " + (ddg >= 0 ? "+" : "") + ddg.toFixed(1) + " kcal/mol";
+    if (ddg >= 1.8) {
+      el('ddg-pill').style.color = "#fb7185";
+      el('ddg-label').textContent = "Destabilizing (ER-Retention Risk)";
+    } else if (ddg >= 1.0) {
+      el('ddg-pill').style.color = "#fcd34d";
+      el('ddg-label').textContent = "Moderately Destabilizing";
+    } else {
+      el('ddg-pill').style.color = "#38bdf8";
+      el('ddg-label').textContent = "Fold-Neutral";
+    }
+
+    function applyScoreStyle(s, sourceLabel) {
+      el('pred-score').textContent = s.toFixed(3);
+      el('am-source-tag').textContent = sourceLabel;
+      if (s >= 0.65) {
+        el('pred-verdict').textContent = "Deleterious";
+        el('pred-verdict').style.color = "#fb7185";
+      } else if (s <= 0.35) {
+        el('pred-verdict').textContent = "Tolerated";
+        el('pred-verdict').style.color = "#34d399";
+      } else {
+        el('pred-verdict').textContent = "Moderate";
+        el('pred-verdict').style.color = "#fcd34d";
+      }
+    }
 
     if (cv) {
       score = cv.score;
-      cons = 94.2;
       el('cv-status').textContent = cv.sig;
       el('cv-status').style.color = score >= 0.65 ? "#fb7185" : "#34d399";
       el('cv-dot').style.background = score >= 0.65 ? "#fb7185" : "#34d399";
       el('clinvar-accession').textContent = "ClinVar: " + hgvs3 + " ↗";
+      applyScoreStyle(score, "ClinVar Verified");
     } else {
       const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
       const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
       const breaker = pObj.inTM && (alt === "P" || alt === "G" || wt === "P" || wt === "G");
-      let raw = 0.20 + Math.min(dh * (pObj.inTM ? 0.065 : 0.03), 0.32) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.16 : 0) + (breaker ? 0.22 : 0);
+      let raw = 0.18 + Math.min(dh * (pObj.inTM ? 0.06 : 0.03), 0.30) + Math.min(dq * 0.18, 0.28) + (pObj.inTM ? 0.15 : 0) + (breaker ? 0.20 : 0);
       score = Math.min(Math.max(raw, 0.05), 0.96);
       el('cv-status').textContent = "VUS";
       el('cv-status').style.color = "#34d399";
       el('cv-dot').style.background = "#34d399";
       el('clinvar-accession').textContent = "Search " + hgvs3 + " ↗";
+      applyScoreStyle(score, "Biophysical Estimate");
+
+      // Silent background enrichment from Ensembl REST VEP (AlphaMissense) for novel VUS
+      const vepBase = "https:" + "//rest.ensembl.org/vep/human/hgvs/";
+      const reqTag = variantLabel;
+      fetch(vepBase + encodeURIComponent("NP_005620.1:" + hgvs3) + "?AlphaMissense=1", {
+        headers: { "Accept": "application/json" }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(payload => {
+          const currentVar = REF_SEQ.charAt(parseInt(el('pos-slider').value, 10) - 1) + el('pos-slider').value + el('alt-select').value;
+          if (currentVar !== reqTag || !Array.isArray(payload) || !payload.at(0)) return;
+          const tcs = payload.at(0).transcript_consequences || [];
+          const hit = tcs.find(t => t.gene_symbol === "SLC6A8" && t.alphamissense) || tcs.find(t => t.alphamissense);
+          const amVal = hit && hit.alphamissense && hit.alphamissense.am_pathogenicity;
+          if (typeof amVal === "number") {
+            applyScoreStyle(amVal, "AlphaMissense (Ensembl)");
+          }
+        }).catch(() => {});
     }
 
-    // Live background verification against NCBI E-utilities to upgrade to direct VCV record when available
+    // Live background verification against NCBI ClinVar E-utilities
     const apiBase = "https:" + "//eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
     fetch(apiBase + "?db=clinvar&retmode=json&term=" + encodeURIComponent("SLC6A8[gene] AND " + hgvs3))
       .then(r => r.ok ? r.json() : null)
@@ -474,29 +590,9 @@
           el('clinvar-accession').textContent = "VCV" + String(realId).padStart(9, "0") + " ↗";
         }
       }).catch(() => {});
-
-    el('conservation-val').textContent = cons.toFixed(1) + "%";
-    el('pred-score').textContent = score.toFixed(3);
-
-    if (score >= 0.65) {
-      el('pred-verdict').textContent = "Deleterious";
-      el('pred-verdict').style.color = "#fb7185";
-    } else if (score <= 0.35) {
-      el('pred-verdict').textContent = "Tolerated";
-      el('pred-verdict').style.color = "#34d399";
-    } else {
-      el('pred-verdict').textContent = "Moderate";
-      el('pred-verdict').style.color = "#fcd34d";
-    }
   }
 
-  el('pos-slider').addEventListener('input', runPipeline);
-  el('alt-select').addEventListener('change', runPipeline);
-  el('btn-prev').addEventListener('click', () => { if (el('pos-slider').value > 1) { el('pos-slider').value--; runPipeline(); } });
-  el('btn-next').addEventListener('click', () => { if (el('pos-slider').value < 635) { el('pos-slider').value++; runPipeline(); } });
-
-  buildStylizedTopology();
-  runPipeline();
+    
 </script>
 </body>
 </html>
