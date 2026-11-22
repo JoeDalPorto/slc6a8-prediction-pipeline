@@ -2,7 +2,7 @@
 SLC6A8-LeuT Variant Explorer (v1.0-beta)
 
 An interactive, zero-dependency web application for mapping, visualizing, and evaluating missense variants across the canonical 635-amino-acid human creatine transporter (SLC6A8 / CRT1, UniProt P48029).
-Live Interactive Tool: github.io
+Live Interactive Tool: [github.io](https://joedalporto.github.io/slc6a8-prediction-pipeline/)
 
 Key Features
 
