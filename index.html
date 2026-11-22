@@ -213,7 +213,7 @@
 <div class="foot-bar">
     <div style="display:flex; align-items:center; gap:8px;">
       <span>UniProt P48029 • Canonical Human SLC6A8 (635 AA)</span>
-      <span style="background:#1e293b; color:#fbbf24; border:1px solid #334155; font-family:monospace; font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px;">v1.0-beta</span>
+      <span style="background:#1e293b; color:#fbbf24; border:1px solid #334155; font-family:monospace; font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px;">v1.2-beta</span>
     </div>
     <span class="db-pill">active_db: ClinVar</span>
   </div>
@@ -243,6 +243,7 @@
     P: { short: "Pro", full: "Proline" },       S: { short: "Ser", full: "Serine" },
     T: { short: "Thr", full: "Threonine" },     W: { short: "Trp", full: "Tryptophan" },
     Y: { short: "Tyr", full: "Tyrosine" },      V: { short: "Val", full: "Valine" }
+   "*": { short: "Ter", full: "Stop / Truncation" }
   };
 
   const HYDROPATHY = {
@@ -345,6 +346,11 @@
     R600W: { sig: "Pathogenic", vid: "429166", score: 0.922 },
     A605T: { sig: "Benign",     vid: "134822", score: 0.076 },
     V626I: { sig: "Benign",     vid: "134825", score: 0.068 }
+     
+      // Curated Nonsense / Stop Codon Variants
+    "Y317*": { sig: "Pathogenic", vid: "213899", score: 0.996 },
+    "Q385*": { sig: "Pathogenic", vid: "429133", score: 0.995 },
+    "R514*": { sig: "Pathogenic", vid: "11706",  score: 0.995 }
   };
   // 18 Non-Contiguous SLC6A8 Solute & Ion-Binding Residues (LeuT-Fold Core)
   const TRANSPORT_SITES = {
@@ -562,14 +568,27 @@
       ? pObj.domainLabel + '<div style="font-size:11px; color:#fbbf24; margin-top:3px;">★ ' + role + '</div>'
       : pObj.domainLabel;
 
+       const isStop = (alt === "*");
+
     TM_LIST.forEach(tm => {
       const rect = el('cap-' + tm.name);
       const lbl = el('lbl-' + tm.name);
       const isActive = (pObj.tmName === tm.name);
-      rect.setAttribute('fill', isActive ? 'rgba(37, 99, 235, 0.45)' : 'rgba(30, 41, 59, 0.45)');
-      rect.setAttribute('stroke', isActive ? '#60a5fa' : '#334155');
-      rect.setAttribute('stroke-width', isActive ? '2' : '1.2');
-      lbl.setAttribute('fill', isActive ? '#60a5fa' : '#94a3b8');
+      const isTruncated = isStop && (tm.s > pos);
+
+      if (isTruncated) {
+        rect.setAttribute('fill', 'rgba(15, 23, 42, 0.25)');
+        rect.setAttribute('stroke', '#334155');
+        rect.setAttribute('stroke-width', '1');
+        rect.setAttribute('stroke-dasharray', '3 3');
+        lbl.setAttribute('fill', '#475569');
+      } else {
+        rect.removeAttribute('stroke-dasharray');
+        rect.setAttribute('fill', isActive ? 'rgba(37, 99, 235, 0.45)' : 'rgba(30, 41, 59, 0.45)');
+        rect.setAttribute('stroke', isActive ? '#60a5fa' : '#334155');
+        rect.setAttribute('stroke-width', isActive ? '2' : '1.2');
+        lbl.setAttribute('fill', isActive ? '#60a5fa' : '#94a3b8');
+      }
     });
 
     el('active-marker').setAttribute('transform', 'translate(' + pObj.x.toFixed(1) + ', ' + pObj.y.toFixed(1) + ')');
@@ -588,6 +607,12 @@
       el('cv-status').style.color = score >= 0.65 ? "#fb7185" : "#34d399";
       el('cv-dot').style.background = score >= 0.65 ? "#fb7185" : "#34d399";
       el('clinvar-accession').textContent = "ClinVar: " + hgvs3 + " ↗";
+    } else if (isStop) {
+      score = pos <= 603 ? 0.992 : 0.780;
+      el('cv-status').textContent = pos <= 603 ? "Predicted LOF (NMD)" : "C-Term Truncation";
+      el('cv-status').style.color = pos <= 603 ? "#fb7185" : "#fcd34d";
+      el('cv-dot').style.background = pos <= 603 ? "#fb7185" : "#fcd34d";
+      el('clinvar-accession').textContent = "Search " + hgvs3 + " ↗";
     } else {
       const dh = Math.abs((Reflect.get(HYDROPATHY, alt) || 0) - (Reflect.get(HYDROPATHY, wt) || 0));
       const dq = Math.abs((Reflect.get(CHARGE, alt) || 0) - (Reflect.get(CHARGE, wt) || 0));
@@ -615,18 +640,23 @@
 
     el('conservation-val').textContent = cons.toFixed(1) + "%";
       const ddg = computeFoldingDeltaG(pos, wt, alt, pObj);
-    el('ddg-val').textContent = (ddg >= 0 ? "+" : "") + ddg.toFixed(1) + " kcal/mol";
-    if (ddg >= 1.8) {
-      el('ddg-val').style.color = "#fb7185";
-      el('ddg-label').textContent = "Destabilizing (ER Risk)";
-    } else if (ddg >= 1.0) {
-      el('ddg-val').style.color = "#fcd34d";
-      el('ddg-label').textContent = "Moderately Destabilizing";
+    if (isStop) {
+      el('ddg-val').textContent = pos <= 603 ? "Truncated (NMD)" : "C-Term Truncation";
+      el('ddg-val').style.color = pos <= 603 ? "#fb7185" : "#fcd34d";
+      el('ddg-label').textContent = pos <= 603 ? "Loss of TM" + (TM_LIST.filter(t => t.s > pos).length || "12") + " Core" : "NMD-Escape Tail";
     } else {
-      el('ddg-val').style.color = "#38bdf8";
-      el('ddg-label').textContent = "Fold-Neutral";
+      el('ddg-val').textContent = (ddg >= 0 ? "+" : "") + ddg.toFixed(1) + " kcal/mol";
+      if (ddg >= 1.8) {
+        el('ddg-val').style.color = "#fb7185";
+        el('ddg-label').textContent = "Destabilizing (ER Risk)";
+      } else if (ddg >= 1.0) {
+        el('ddg-val').style.color = "#fcd34d";
+        el('ddg-label').textContent = "Moderately Destabilizing";
+      } else {
+        el('ddg-val').style.color = "#38bdf8";
+        el('ddg-label').textContent = "Fold-Neutral";
+      }
     }
-
     el('pred-score').textContent = score.toFixed(3);
 
     if (score >= 0.65) {
