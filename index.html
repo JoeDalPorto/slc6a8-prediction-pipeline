@@ -83,16 +83,20 @@
 <body>
 <div class="shell">
   <div class="main-body">
-       <div class="header-row">
+        <div class="header-row">
       <div>
-        <h1 class="main-title" style="margin-top:0; margin-bottom:2px;">SLC6A8 Mutation Variant Explorer</h1>
-        <div style="font-size:13px; font-weight:700; letter-spacing:0.04em; color:#38bdf8;">Human Creatine Transporter Topology Map</div>
+        <h1 class="main-title" style="margin-top:0; margin-bottom:2px;">SLC6A8-LeuT Variant Explorer</h1>
+        <div style="font-size:13px; font-weight:700; letter-spacing:0.04em; color:#38bdf8;">Human Creatine Transporter Topology</div>
       </div>
-      <div style="background:#131720; border:1px solid #334155; padding:5px 12px; border-radius:8px; font-size:12px;">
-        <label style="display:flex; align-items:center; gap:7px; cursor:pointer; color:#fbbf24; font-weight:600;">
-          <input type="checkbox" id="toggle-transport" checked style="accent-color:#fbbf24; cursor:pointer;">
-          <span>● Solute / Ion Binding Sites (18)</span>
-        </label>
+
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+        <button id="btn-copy-link" style="background:#131720; color:#38bdf8; border:1px solid #334155; padding:5px 11px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;">🔗 Copy Variant Link</button>
+        <div style="background:#131720; border:1px solid #334155; padding:5px 12px; border-radius:8px; font-size:12px;">
+          <label style="display:flex; align-items:center; gap:7px; cursor:pointer; color:#fbbf24; font-weight:600;">
+            <input type="checkbox" id="toggle-transport" checked style="accent-color:#fbbf24; cursor:pointer;">
+            <span>● Solute / Ion Binding Sites (18)</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -557,6 +561,9 @@
     populateDropdown(wt, pos);
     const alt = el('alt-select').value || "R";
     const variantLabel = wt + pos + alt;
+   const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set("var", variantLabel);
+    window.history.replaceState(null, "", shareUrl.toString());
     const pObj = pts.at(pos - 1);
 
     el('aa-num').textContent = pos;
@@ -772,6 +779,41 @@
   el('btn-export-csv').addEventListener('click', exportSessionCsv);
   el('btn-clear-log').addEventListener('click', () => { sessionLog = new Array(); renderSessionLog(); });
   el('tester-note').addEventListener('keydown', e => { if (e.key === "Enter") logCurrentVariant(); });
+  // Parse shareable ?var=... query parameter (e.g., ?var=G87R or ?var=R514*)
+  function applyUrlVariant() {
+    const params = new URLSearchParams(window.location.search);
+    const rawVar = (params.get("var") || "").trim().toUpperCase();
+    const match = /^([A-Z])(\d{1,3})([A-Z\*])$/.exec(rawVar);
+    if (!match) return;
+
+    const reqWt = match.at(1);
+    const reqPos = parseInt(match.at(2), 10);
+    const reqAlt = match.at(3);
+    if (reqPos >= 1 && reqPos <= 635) {
+      const trueWt = REF_SEQ.charAt(reqPos - 1);
+      if (reqWt === trueWt && Reflect.has(AA_INFO, reqAlt) && reqAlt !== trueWt) {
+        el('pos-slider').value = reqPos;
+        populateDropdown(trueWt, reqPos);
+        el('alt-select').value = reqAlt;
+      }
+    }
+  }
+
+  el('btn-copy-link').addEventListener('click', () => {
+    const btn = el('btn-copy-link');
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      btn.textContent = "✅ Link Copied!";
+      btn.style.borderColor = "#10b981";
+      btn.style.color = "#34d399";
+      setTimeout(() => {
+        btn.textContent = "🔗 Copy Variant Link";
+        btn.style.borderColor = "#334155";
+        btn.style.color = "#38bdf8";
+      }, 1800);
+    }).catch(() => {});
+  });
+
+  applyUrlVariant();
 
   buildStylizedTopology();
   runPipeline();
